@@ -16,6 +16,10 @@ run:
 debug:
 	@echo "\n> 🕵️  Debugging the project locally...\n"
 
+clean:
+	@echo "\n> 🧹 Cleaning up...\n"
+	find . -type d -name "__pycache__" -exec rm -r {} +
+
 freeze:
 	@echo "\n> 🧊 Freezing the requirements...\n"
 	@for file in requirements*.txt; do \
@@ -26,7 +30,7 @@ freeze:
 			echo "$$file not found, skipping..."; \
 		fi \
 	done
-	@python src/update_pyproject.py
+	@python scripts/update_pyproject.py
 
 sort:
 	@echo "\n> ⬇️ Sorting requirements and env files alphabetically...\n"

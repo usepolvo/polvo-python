@@ -4,22 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "usepolvo"
-version = "0.2.5"
+version = "1.0.0"
 description = "A comprehensive integration package supporting various services."
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
-    "aiohttp==3.11.11",
+    "aiohttp==3.11.12",
+    "anthropic==0.45.2",
     "asyncio==3.4.3",
-    "cryptography==44.0.0",
-    "gql==3.5.0",
-    "pydantic-settings==2.7.1",
+    "cryptography==44.0.1",
     "pydantic==2.10.6",
-    "pyngrok==7.2.3",
+    "pydantic-settings==2.7.1",
     "python-dotenv==1.0.1",
     "ratelimit==2.2.1",
     "requests==2.32.3",
-    "requests-toolbelt==1.0.0",
     "tenacity==9.0.0",
 ]
 [[project.authors]]
@@ -27,17 +25,8 @@ name = "Caio Pizzol"
 email = "caio@usepolvo.com"
 
 [project.optional-dependencies]
-stripe = ["stripe==10.5.0"]
-openai = ["openai==1.42.0"]
-claude = ["anthropic==0.34.1"]
-gemini = ["google-generativeai==0.7.2"]
 hubspot = ["hubspot-api-client==9.0.0"]
-linear = ["gql==3.5.0"]
 all = [
-    "stripe==10.5.0",
-    "openai==1.42.0",
-    "anthropic==0.34.1",
-    "google-generativeai==0.7.2",
     "hubspot-api-client==9.0.0",
 ]
 
@@ -45,7 +34,7 @@ all = [
 text = "MIT"
 
 [tool.black]
-line-length = 88
+line-length = 100
 
 [tool.isort]
 profile = "black"

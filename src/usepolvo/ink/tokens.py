@@ -1,4 +1,4 @@
-# src/usepolvo/ink/tokens.py
+# ink/tokens.py
 
 import json
 from pathlib import Path
@@ -6,18 +6,24 @@ from typing import Dict, Optional
 
 from cryptography.fernet import Fernet
 
+from usepolvo.beak.config import get_settings
+
 
 class SecureTokenStore:
     """Optional secure token storage utility."""
 
     def __init__(self, encryption_key: Optional[str] = None, storage_path: Optional[Path] = None):
         """Initialize token store."""
+        self.settings = get_settings()
         self.storage_path = storage_path or Path.home() / ".usepolvo" / "tokens"
+
         # Create full directory path
         self.storage_path.mkdir(parents=True, exist_ok=True)
 
-        if encryption_key:
-            self.fernet = Fernet(encryption_key.encode())
+        # Initialize Fernet instance
+        self.encryption_key = encryption_key or self.settings.ENCRYPTION_KEY
+        if self.encryption_key:
+            self.fernet = Fernet(self.encryption_key.encode())
         else:
             self.fernet = None
 
