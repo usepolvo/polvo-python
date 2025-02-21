@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "usepolvo"
-version = "1.0.2"
+version = "1.0.1"
 description = "A comprehensive integration package supporting various services."
 readme = "README.md"
 requires-python = ">=3.7"
@@ -15,6 +15,7 @@ dependencies = [
     "cryptography==44.0.1",
     "gql==3.5.1",
     "numpy==2.2.3",
+    "openai==1.63.2",
     "pydantic-settings==2.7.1",
     "pydantic[email]==2.10.6",
     "python-dotenv==1.0.1",
@@ -24,7 +25,7 @@ dependencies = [
 ]
 [[project.authors]]
 name = "Caio Pizzol"
-email = "caio@usepolvo.com"
+email = "hi@usepolvo.com"
 
 [project.optional-dependencies]
 hubspot = ["hubspot-api-client==9.0.0"]

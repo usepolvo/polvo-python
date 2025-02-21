@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Type
 
 from usepolvo.arms.tentacles.base import BaseTentacle
+from usepolvo.brain.config import ModelProvider
 
 
 class TentacleRegistry:
@@ -91,12 +92,32 @@ class TentacleRegistry:
             definition = instance.definition
             functions.append(
                 {
-                    "name": definition.name,
-                    "description": definition.description,
-                    "parameters": definition.input_schema,
+                    "type": "function",  # Required by OpenAI
+                    "function": {  # Function details must be nested
+                        "name": definition.name,
+                        "description": definition.description,
+                        "parameters": definition.input_schema,
+                    },
                 }
             )
         return functions
+
+    async def to_provider_format(self, provider: ModelProvider) -> List[Dict[str, Any]]:
+        """
+        Get all tentacle definitions in the specified provider's format.
+
+        Args:
+            provider: The ModelProvider enum value
+
+        Returns:
+            List of tool/function definitions in provider-specific format
+        """
+        if provider == ModelProvider.ANTHROPIC:
+            return await self.to_anthropic_format()
+        elif provider == ModelProvider.OPENAI:
+            return await self.to_openai_format()
+        else:
+            raise ValueError(f"Unsupported provider format: {provider}")
 
     async def execute_tentacle(
         self, name: str, inputs: Dict[str, Any], timeout: Optional[float] = None

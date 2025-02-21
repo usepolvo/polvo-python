@@ -5,6 +5,7 @@ cryptography==44.0.1
 gql==3.5.1
 hubspot-api-client==11.1.0
 numpy==2.2.3
+openai==1.63.2
 pydantic-settings==2.7.1
 pydantic[email]==2.10.6
 python-dotenv==1.0.1

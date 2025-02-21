@@ -1,27 +1,15 @@
 # brain/base.py
 import os
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from anthropic import Anthropic
 from pydantic import BaseModel
 
 from usepolvo.arms.tentacles import BaseTentacle
+from usepolvo.brain.config import BrainConfig, ModelProvider
 from usepolvo.brain.memory import Memory
 from usepolvo.brain.synapse import Synapse
 from usepolvo.tentacles.registry import TentacleRegistry
-
-
-class BrainConfig(BaseModel):
-    """Configuration for a Brain."""
-
-    name: str
-    description: str
-    system_prompt: str
-    model: str = "claude-3-opus-20240229"
-    max_tokens: int = 4096
-    temperature: float = 0.7
-    memory_limit: int = 100
-    tentacles_enabled: bool = True
 
 
 class Brain:
@@ -38,7 +26,8 @@ class Brain:
         tentacles: Optional[TentacleRegistry] = None,
     ):
         self.config = config
-        self.client = Anthropic(api_key=os.getenv("POLVO_CLAUDE_API_KEY"))
+        # Initialize appropriate client based on provider
+        self.client = self._initialize_client()
         self.memory = memory or Memory(config.memory_limit)
         self.synapse = synapse or Synapse()
         self.tentacles = tentacles or TentacleRegistry()
@@ -49,6 +38,19 @@ class Brain:
 
         # Register handlers
         self._setup_event_handlers()
+
+    def _initialize_client(self) -> Any:
+        """Initialize the appropriate client based on provider configuration."""
+        if self.config.provider == ModelProvider.ANTHROPIC:
+            from anthropic import Anthropic
+
+            return Anthropic(api_key=os.getenv("POLVO_ANTHROPIC_API_KEY"))
+        elif self.config.provider == ModelProvider.OPENAI:
+            from openai import OpenAI
+
+            return OpenAI(api_key=os.getenv("POLVO_OPENAI_API_KEY"))
+        else:
+            raise ValueError(f"Unsupported provider: {self.config.provider}")
 
     def _setup_event_handlers(self):
         """Set up default signal processors for the brain."""
@@ -74,8 +76,16 @@ class Brain:
             return {"status": "error", "error": "Tentacles are disabled"}
 
         try:
+            import json
+
             tentacle = await self.tentacles.get_tentacle(event["tool_name"])
-            result = await tentacle(**event["tool_input"])
+            # Parse the tool input if it's a string (OpenAI sends JSON string)
+            tool_input = (
+                json.loads(event["tool_input"])
+                if isinstance(event["tool_input"], str)
+                else event["tool_input"]
+            )
+            result = await tentacle(**tool_input)
             return result
         except Exception as e:
             return {"status": "error", "error": str(e)}
@@ -96,61 +106,28 @@ class Brain:
 
             # Get tools if enabled
             tools = (
-                await self.tentacles.to_anthropic_format() if self.config.tentacles_enabled else []
+                await self.tentacles.to_provider_format(self.config.provider)
+                if self.config.tentacles_enabled
+                else []
             )
 
             # Build message history
             messages = [{"role": "user", "content": input}]
 
-            # Process with Claude
-            response = self.client.messages.create(
-                model=self.config.model,
-                max_tokens=self.config.max_tokens,
-                temperature=self.config.temperature,
-                messages=messages,
-                tools=tools,
-            )
+            # Process with appropriate model
+            response = await self._process_with_provider(messages, tools)
 
-            # Handle multiple tool uses in sequence
-            while any(block.type == "tool_use" for block in response.content):
-                tool_use = next(block for block in response.content if block.type == "tool_use")
-
-                # Execute the tool
+            # Handle tool uses
+            while self._has_tool_use(response):
+                tool_use = self._extract_tool_use(response)
                 tool_result = await self._handle_tool_use(
-                    {"tool_name": tool_use.name, "tool_input": tool_use.input}
+                    {"tool_name": tool_use["name"], "tool_input": tool_use["input"]}
                 )
+                messages.extend(self._format_tool_interaction(response, tool_result, tool_use))
+                response = await self._process_with_provider(messages, tools)
 
-                # Add the interaction to message history
-                messages.extend(
-                    [
-                        {"role": "assistant", "content": response.content},
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "tool_result",
-                                    "tool_use_id": tool_use.id,
-                                    "content": str(tool_result),
-                                }
-                            ],
-                        },
-                    ]
-                )
-
-                # Let Claude process tool result and potentially request more tools
-                response = self.client.messages.create(
-                    model=self.config.model,
-                    max_tokens=self.config.max_tokens,
-                    temperature=self.config.temperature,
-                    messages=messages,
-                    tools=tools,
-                )
-
-            # Extract the final text response
-            final_response = next(
-                (block.text for block in response.content if hasattr(block, "text")),
-                None,
-            )
+            # Extract final response
+            final_response = self._extract_final_response(response)
 
             # Add response to memory
             self.synapse.transmit(
@@ -163,6 +140,123 @@ class Brain:
             self.synapse.transmit("error", {"error": str(e)})
             return {"status": "error", "error": str(e)}
 
+    async def _process_with_provider(
+        self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]
+    ) -> Any:
+        """Process messages using the configured provider."""
+        if self.config.provider == ModelProvider.ANTHROPIC:
+            return self.client.messages.create(
+                model=self.config.model,
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+                messages=messages,
+                tools=tools if tools else None,
+            )
+        elif self.config.provider == ModelProvider.OPENAI:
+            params = {
+                "model": self.config.model,
+                "messages": messages,
+                **self.config.provider_config,
+            }
+            if tools:  # Only add tools if there are any
+                params["tools"] = tools
+
+            return self.client.chat.completions.create(**params)
+        else:
+            raise ValueError(f"Unsupported provider: {self.config.provider}")
+
+    def _has_tool_use(self, response: Any) -> bool:
+        """Check if response contains tool use request."""
+        if self.config.provider == ModelProvider.ANTHROPIC:
+            return any(block.type == "tool_use" for block in response.content)
+        elif self.config.provider == ModelProvider.OPENAI:
+            return response.choices[0].message.tool_calls is not None
+        # Add other provider implementations
+        return False
+
+    def _extract_tool_use(self, response: Any) -> Dict[str, Any]:
+        """Extract tool use information from the response."""
+        if self.config.provider == ModelProvider.ANTHROPIC:
+            tool_use = next(block for block in response.content if block.type == "tool_use")
+            return {
+                "name": tool_use.name,
+                "input": tool_use.input,
+                "id": tool_use.id,  # Extract the tool_use_id
+            }
+        elif self.config.provider == ModelProvider.OPENAI:
+            tool_use = response.choices[0].message.tool_calls[0]
+            return {
+                "name": tool_use.function.name,
+                "input": tool_use.function.arguments,
+                "id": tool_use.id,
+            }
+        else:
+            raise ValueError(f"Unsupported provider: {self.config.provider}")
+
+    def _format_tool_interaction(
+        self, response: Any, tool_result: Any, tool_use: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Format tool interaction as a message history."""
+        if self.config.provider == ModelProvider.ANTHROPIC:
+            return [
+                {"role": "assistant", "content": response.content},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tool_use["id"],
+                            "content": str(tool_result),
+                        }
+                    ],
+                },
+            ]
+        elif self.config.provider == ModelProvider.OPENAI:
+            # First message is the assistant's tool call
+            assistant_message = {
+                "role": "assistant",
+                "content": None,  # OpenAI expects null content when using tool_calls
+                "tool_calls": [
+                    {
+                        "id": tool_use["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tool_use["name"],
+                            "arguments": tool_use["input"],
+                        },
+                    }
+                ],
+            }
+
+            # Second message is the tool response
+            tool_message = {
+                "role": "tool",
+                "tool_call_id": tool_use["id"],
+                "name": tool_use["name"],
+                "content": str(tool_result),
+            }
+
+            return [assistant_message, tool_message]
+        else:
+            raise ValueError(f"Unsupported provider: {self.config.provider}")
+
+    def _extract_final_response(self, response: Any) -> str:
+        """Extract the final text response from the response."""
+        if self.config.provider == ModelProvider.ANTHROPIC:
+            return next(
+                (block.text for block in response.content if hasattr(block, "text")),
+                None,
+            )
+        elif self.config.provider == ModelProvider.OPENAI:
+            message = response.choices[0].message
+            # If there are tool calls, this is not the final response
+            if message.tool_calls:
+                return None
+            # Return the actual content for final responses
+            return message.content
+        else:
+            raise ValueError(f"Unsupported provider: {self.config.provider}")
+
     def cleanup(self):
         """Clean up brain resources."""
         self.memory.cleanup()
@@ -174,11 +268,17 @@ async def create_brain(
     name: str, description: str = "", tentacles: List[BaseTentacle] = None, **kwargs
 ) -> Brain:
     """Create a new brain with default or custom configuration."""
+    # Set tentacles_enabled based on whether tentacles were provided
+    has_tentacles = bool(tentacles)
+
+    # Remove tentacles_enabled from kwargs if it exists to avoid conflicts
+    kwargs.pop("tentacles_enabled", None)
+
     config = BrainConfig(
         name=name,
         description=description or f"{name} - Powered by Polvo",
         system_prompt=kwargs.pop("system_prompt", f"You are {name}, an AI assistant."),
-        tentacles_enabled=bool(tentacles),
+        tentacles_enabled=has_tentacles,  # Set based on tentacles parameter
         **kwargs,
     )
 
@@ -190,34 +290,3 @@ async def create_brain(
             await tentacle_registry.register(tentacle)
 
     return Brain(config=config, tentacles=tentacle_registry)
-
-
-# Example usage:
-"""
-# Create brain configuration
-config = BrainConfig(
-    name="Support Brain",
-    description="Customer support brain with access to documentation and ticketing",
-    system_prompt="You are a helpful customer support assistant..."
-)
-
-# Initialize brain
-brain = Brain(config)
-
-# Add tentacles (tentacles)
-brain.tentacles.register(DocumentationTool())
-brain.tentacles.register(TicketingTool())
-
-# Process input
-response = brain.process("I'm having trouble with login")
-
-# Clean up
-brain.cleanup()
-
-# Or use the factory function
-support_brain = create_brain(
-    name="Support Brain",
-    tentacles=[DocumentationTool(), TicketingTool()],
-    system_prompt="You are a helpful customer support assistant..."
-)
-"""
