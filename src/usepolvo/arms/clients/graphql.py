@@ -5,6 +5,7 @@ from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
 from usepolvo.arms.clients.base import BaseClient
+from usepolvo.beak.exceptions import APIError
 
 
 class GraphQLClient(BaseClient):
