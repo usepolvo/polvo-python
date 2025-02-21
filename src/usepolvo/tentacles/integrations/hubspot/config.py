@@ -1,4 +1,5 @@
 # tentacles/integration/hubspot/config.py
+
 from functools import lru_cache
 from typing import List, Optional
 
@@ -18,7 +19,6 @@ class HubSpotSettings(PolvoSettings):
         "oauth",
         "crm.objects.contacts.read",
     ]
-    HUBSPOT_API_KEY: Optional[str] = None
     HUBSPOT_CLIENT_ID: Optional[str] = None
     HUBSPOT_CLIENT_SECRET: Optional[str] = None
     HUBSPOT_REDIRECT_URI: Optional[str] = None
