@@ -13,8 +13,10 @@ dependencies = [
     "anthropic==0.45.2",
     "asyncio==3.4.3",
     "cryptography==44.0.1",
-    "pydantic==2.10.6",
+    "gql==3.5.1",
+    "numpy==2.2.3",
     "pydantic-settings==2.7.1",
+    "pydantic[email]==2.10.6",
     "python-dotenv==1.0.1",
     "ratelimit==2.2.1",
     "requests==2.32.3",
@@ -26,9 +28,7 @@ email = "caio@usepolvo.com"
 
 [project.optional-dependencies]
 hubspot = ["hubspot-api-client==9.0.0"]
-all = [
-    "hubspot-api-client==9.0.0",
-]
+all = ["hubspot-api-client==9.0.0"]
 
 [project.license]
 text = "MIT"
