@@ -35,6 +35,7 @@ class OAuth2Auth(BaseAuth):
         self.access_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
         self.token_expiry: float = 0
+        self.current_scopes: List[str] = []
 
     def get_auth_headers(self) -> Dict[str, str]:
         """Get authentication headers using current access token."""
@@ -55,7 +56,7 @@ class OAuth2Auth(BaseAuth):
         auth_params = {
             "client_id": self.client_id,
             "redirect_uri": self.redirect_uri,
-            "scope": " ".join(self.scopes),
+            "scope": "%20".join(self.scopes),  # Convert scopes to URL-encoded format
             "response_type": "code",
         }
 
@@ -121,6 +122,9 @@ class OAuth2Auth(BaseAuth):
             self.access_token = token_data["access_token"]
             self.refresh_token = token_data.get("refresh_token", self.refresh_token)
             self.token_expiry = time.time() + token_data.get("expires_in", 3600)
+
+            # Add scopes to the response data
+            token_data["scopes"] = self.scopes
 
             return token_data
 
