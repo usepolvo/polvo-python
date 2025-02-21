@@ -48,16 +48,15 @@ async def example_usage():
     sentiment = MySentimentTentacle()
 
     # Use math tentacle - with schema
-    math_result = await math(MathInput(operation="add", numbers=[1, 2, 3, 4, 5]))
+    math_result = await math(MathInput(operation="add", numbers="1, 2, 3, 4, 5"))
     print(f"Math Result (schema): {math_result.result}")
-    print(f"Steps: {math_result.steps}")
 
     # Use math tentacle - with dict
-    math_result_dict = await math({"operation": "multiply", "numbers": [2, 3, 4]})
+    math_result_dict = await math({"operation": "multiply", "numbers": "2, 3, 4"})
     print(f"Math Result (dict): {math_result_dict.result}")
 
     # Use math tentacle - with kwargs
-    math_result_kwargs = await math(operation="add", numbers=[10, 20, 30])
+    math_result_kwargs = await math(operation="add", numbers="10, 20, 30")
     print(f"Math Result (kwargs): {math_result_kwargs.result}")
 
     # Use sentiment tentacle - with schema
