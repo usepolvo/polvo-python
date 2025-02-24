@@ -1,61 +1,129 @@
----
-name: Bug Report
-about: Create a report to help improve polvo
-title: '[BUG] '
-labels: 'bug'
-assignees: ''
----
+name: 🐛 Bug Report
+description: Create a report to help improve polvo
+title: "🐛 Bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible to help us diagnose and fix the issue.
 
-## Bug Description
-<!-- A clear and concise description of what the bug is -->
+  - type: input
+    id: polvo-version
+    attributes:
+      label: Polvo Version
+      description: What version of polvo are you using?
+      placeholder: "e.g., 1.0.2"
+    validations:
+      required: true
 
-## Environment
-- polvo Version: <!-- e.g. 1.0.2 -->
-- Python Version: <!-- e.g. 3.11.8 -->
-- Operating System: <!-- e.g. Ubuntu 22.04, Windows 11, macOS 13.1 -->
-- Integration(s) Affected: <!-- e.g. HubSpot, Custom API -->
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: What version of Python are you using?
+      placeholder: "e.g., 3.11.8"
+    validations:
+      required: true
 
-## Steps to Reproduce
-1. <!-- First Step -->
-2. <!-- Second Step -->
-3. <!-- And so on... -->
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      options:
+        - Linux
+        - Windows
+        - macOS
+        - Other
+    validations:
+      required: true
 
-## Expected Behavior
-<!-- What you expected to happen -->
+  - type: input
+    id: integration
+    attributes:
+      label: Affected Integration
+      description: Which integration(s) are affected by this bug?
+      placeholder: "e.g., HubSpot, Custom API"
+    validations:
+      required: true
 
-## Actual Behavior
-<!-- What actually happened -->
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: "Describe what happened and what you expected to happen"
+    validations:
+      required: true
 
-## Code Sample
-<!-- If applicable, add a minimal code sample that demonstrates the issue -->
-```python
-from usepolvo.brain import create_brain
-from usepolvo.tentacles.integrations import YourIntegration
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
 
-# Your code here
-```
+  - type: textarea
+    id: code-sample
+    attributes:
+      label: Code Sample
+      description: If applicable, add a minimal code sample that demonstrates the issue
+      render: python
+      value: |
+        from usepolvo.brain import create_brain
+        from usepolvo.tentacles.integrations import YourIntegration
 
-## API Response/Error Message
-<!-- If applicable, include any relevant API responses or error messages -->
-```
-Error message or API response here
-```
+        # Your code here
 
-## Additional Context
-<!-- Add any other context about the problem here. For example:
-- Are you using any specific authentication method?
-- Are there any rate limiting considerations?
-- Have you tried any workarounds?
--->
+  - type: textarea
+    id: error-message
+    attributes:
+      label: Error Message
+      description: If applicable, provide the full error message or API response
+      render: shell
+      placeholder: "Paste the full error message here"
 
-## Possible Solution
-<!-- Optional: If you have any ideas about how to solve the issue, share them here -->
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: |
+        - Authentication method being used
+        - Rate limiting considerations
+        - Attempted workarounds
+        - Related issues
 
-## Related Issues
-<!-- Optional: Link to any related issues or pull requests -->
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Before submitting the issue, please verify the following
+      options:
+        - label: I have checked for similar issues
+          required: true
+        - label: I am using the latest version of polvo
+          required: true
+        - label: I have included all relevant error messages
+          required: true
+        - label: I have provided a minimal code sample
+          required: false
 
-## Checklist
-- [ ] I have checked for similar issues
-- [ ] I am using the latest version of polvo
-- [ ] I have included all relevant error messages
-- [ ] I have provided a minimal code sample
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Issue Severity
+      description: How severe is this bug?
+      options:
+        - Critical (System unusable)
+        - High (Major functionality broken)
+        - Medium (Some functionality affected)
+        - Low (Minor inconvenience)
+    validations:
+      required: true
