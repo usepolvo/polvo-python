@@ -34,59 +34,106 @@ pip install usepolvo
 
 ## Quick Start
 
-### Define Your Models
+### 1. HubSpot Integration Example
 
 ```python
-from pydantic import BaseModel, EmailStr
-from typing import Optional, Dict, Any
-
-class ContactInput(BaseModel):
-    operation: str
-    email: Optional[EmailStr]
-
-class ContactOutput(BaseModel):
-    id: str
-    properties: Dict[str, Any]
-```
-
-### Create Your Integration
-
-```python
-from usepolvo.tentacles import APITentacle
-from usepolvo.tentacles.integration import HubSpotClient
-
-class HubSpotContactsTentacle(APITentacle[ContactInput, ContactOutput]):
-    def __init__(self):
-        self.client = HubSpotClient()
-        super().__init__(self.client)
-
-    async def execute(self, input: ContactInput) -> ContactOutput:
-        # Implement your integration logic
-        pass
-```
-
-### Use with Brain or Standalone
-
-```python
-# With Brain
+from usepolvo.tentacles.integrations.hubspot import HubSpotContactsTentacle
 from usepolvo.brain import create_brain
 
-brain = await create_brain(tentacles=[HubSpotContactsTentacle()])
-response = await brain.process("Create a new contact for john@example.com")
+async def main():
+    # Initialize HubSpot contacts integration
+    contacts = HubSpotContactsTentacle()
 
-# Standalone
-tentacle = HubSpotContactsTentacle()
-result = await tentacle(ContactInput(operation="create", email="john@example.com"))
+    # Create a new contact
+    result = await contacts.execute({
+        "operation": "create",
+        "email": "john@example.com",
+        "firstname": "John",
+        "lastname": "Smith"
+    })
+
+    # Use with Brain for AI-powered operations
+    brain = await create_brain(
+        name="HubSpot Assistant",
+        tentacles=[contacts],
+        system_prompt="You are a HubSpot CRM management assistant."
+    )
+
+    response = await brain.process(
+        "Create a new contact with email jane@example.com and name Jane Doe"
+    )
+```
+
+### 2. Custom API Integration Example
+
+```python
+from pydantic import BaseModel, Field
+from usepolvo.arms.clients.rest import RESTClient
+from usepolvo.arms.tentacles.api import APITentacle
+
+# Define your models
+class WeatherInput(BaseModel):
+    operation: str = Field(..., description="Operation: current or forecast")
+    city: str = Field(..., description="City to get weather for")
+
+class WeatherOutput(BaseModel):
+    city: str
+    temperature: float
+    conditions: str
+
+# Create API client
+class WeatherClient(RESTClient):
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://api.weather.com/v1"
+
+    def get_current(self, city: str):
+        return self._request("GET", f"/weather/{city}")
+
+# Create your integration
+class WeatherTentacle(APITentacle[WeatherInput, WeatherOutput]):
+    def __init__(self):
+        self.client = WeatherClient()
+        super().__init__(self.client)
+
+    async def execute(self, input: WeatherInput) -> WeatherOutput:
+        if input.operation == "current":
+            data = self.client.get_current(input.city)
+            return WeatherOutput(**data)
+
+# Usage
+async def main():
+    weather = WeatherTentacle()
+
+    # Direct usage
+    result = await weather({
+        "operation": "current",
+        "city": "San Francisco"
+    })
+
+    # Use with Brain
+    brain = await create_brain(
+        name="Weather Assistant",
+        tentacles=[weather]
+    )
+
+    response = await brain.process(
+        "What's the current weather in San Francisco?"
+    )
 ```
 
 ## Configuration
 
-Create a `.env` file:
+Create a `.env` file with your API credentials:
 
 ```env
-POLVO_HUBSPOT_CLIENT_ID=your_hubspot_client_id
-POLVO_HUBSPOT_CLIENT_SECRET=your_hubspot_client_secret
-POLVO_HUBSPOT_REDIRECT_URI=your_hubspot_redirect_uri
+# HubSpot Configuration
+POLVO_HUBSPOT_CLIENT_ID=your_client_id
+POLVO_HUBSPOT_CLIENT_SECRET=your_client_secret
+POLVO_HUBSPOT_REDIRECT_URI=your_redirect_uri
+
+# Custom API Configuration
+POLVO_WEATHER_API_KEY=your_api_key
 ```
 
 ## Documentation
