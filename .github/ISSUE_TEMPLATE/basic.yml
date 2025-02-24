@@ -1,0 +1,61 @@
+---
+name: Bug Report
+about: Create a report to help improve polvo
+title: '[BUG] '
+labels: 'bug'
+assignees: ''
+---
+
+## Bug Description
+<!-- A clear and concise description of what the bug is -->
+
+## Environment
+- polvo Version: <!-- e.g. 1.0.2 -->
+- Python Version: <!-- e.g. 3.11.8 -->
+- Operating System: <!-- e.g. Ubuntu 22.04, Windows 11, macOS 13.1 -->
+- Integration(s) Affected: <!-- e.g. HubSpot, Custom API -->
+
+## Steps to Reproduce
+1. <!-- First Step -->
+2. <!-- Second Step -->
+3. <!-- And so on... -->
+
+## Expected Behavior
+<!-- What you expected to happen -->
+
+## Actual Behavior
+<!-- What actually happened -->
+
+## Code Sample
+<!-- If applicable, add a minimal code sample that demonstrates the issue -->
+```python
+from usepolvo.brain import create_brain
+from usepolvo.tentacles.integrations import YourIntegration
+
+# Your code here
+```
+
+## API Response/Error Message
+<!-- If applicable, include any relevant API responses or error messages -->
+```
+Error message or API response here
+```
+
+## Additional Context
+<!-- Add any other context about the problem here. For example:
+- Are you using any specific authentication method?
+- Are there any rate limiting considerations?
+- Have you tried any workarounds?
+-->
+
+## Possible Solution
+<!-- Optional: If you have any ideas about how to solve the issue, share them here -->
+
+## Related Issues
+<!-- Optional: Link to any related issues or pull requests -->
+
+## Checklist
+- [ ] I have checked for similar issues
+- [ ] I am using the latest version of polvo
+- [ ] I have included all relevant error messages
+- [ ] I have provided a minimal code sample
