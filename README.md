@@ -96,6 +96,22 @@ class WeatherTentacle(APITentacle[WeatherInput, WeatherOutput]):
         self.client = WeatherClient()
         super().__init__(self.client)
 
+    def _setup(self) -> None:
+        """Set up the weather tentacle definition."""
+        self._definition = TentacleDefinition(
+            name="weather",
+            description="""
+            Get weather information for cities.
+            Available cities: San Francisco, New York, London, Tokyo.
+
+            Operations:
+            - current: Get current weather conditions
+            - forecast: Get multi-day forecast
+            """,
+            input_schema=WeatherInput.model_json_schema(),
+            output_schema=WeatherOutput.model_json_schema(),
+        )
+
     async def execute(self, input: WeatherInput) -> WeatherOutput:
         if input.operation == "current":
             data = self.client.get_current(input.city)
