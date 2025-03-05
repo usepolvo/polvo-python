@@ -5,11 +5,11 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from usepolvo.arms.tentacles import BaseTentacle
 from usepolvo.brain.config import BrainConfig, ModelProvider
 from usepolvo.brain.memory import Memory
 from usepolvo.brain.synapse import Synapse
-from usepolvo.tentacles.registry import TentacleRegistry
+from usepolvo.core.tools import BaseTool
+from usepolvo.core.tools.registry import ToolRegistry
 
 
 class Brain:
@@ -23,14 +23,14 @@ class Brain:
         config: BrainConfig,
         memory: Optional[Memory] = None,
         synapse: Optional[Synapse] = None,
-        tentacles: Optional[TentacleRegistry] = None,
+        tools: Optional[ToolRegistry] = None,
     ):
         self.config = config
         # Initialize appropriate client based on provider
         self.client = self._initialize_client()
         self.memory = memory or Memory(config.memory_limit)
         self.synapse = synapse or Synapse()
-        self.tentacles = tentacles or TentacleRegistry()
+        self.tools = tools or ToolRegistry()
 
         # Cognitive state
         self.last_plan = None
@@ -57,8 +57,8 @@ class Brain:
         # Handle memory signals
         self.synapse.connect(signal_type="memory_update", processor=self._handle_memory_update)
 
-        # Handle tentacle use signals
-        self.synapse.connect(signal_type="tentacle_use", processor=self._handle_tool_use)
+        # Handle tool use signals
+        self.synapse.connect(signal_type="tool_use", processor=self._handle_tool_use)
 
         # Handle error signals
         self.synapse.connect(signal_type="error", processor=self._handle_error)
@@ -71,21 +71,21 @@ class Brain:
         )
 
     async def _handle_tool_use(self, event: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle tentacle use request events."""
-        if not self.config.tentacles_enabled:
-            return {"status": "error", "error": "Tentacles are disabled"}
+        """Handle tool use request events."""
+        if not self.config.tools_enabled:
+            return {"status": "error", "error": "Tools are disabled"}
 
         try:
             import json
 
-            tentacle = await self.tentacles.get_tentacle(event["tool_name"])
+            tool = await self.tools.get_tool(event["tool_name"])
             # Parse the tool input if it's a string (OpenAI sends JSON string)
             tool_input = (
                 json.loads(event["tool_input"])
                 if isinstance(event["tool_input"], str)
                 else event["tool_input"]
             )
-            result = await tentacle(**tool_input)
+            result = await tool(**tool_input)
             return result
         except Exception as e:
             return {"status": "error", "error": str(e)}
@@ -106,8 +106,8 @@ class Brain:
 
             # Get tools if enabled
             tools = (
-                await self.tentacles.to_provider_format(self.config.provider)
-                if self.config.tentacles_enabled
+                await self.tools.to_provider_format(self.config.provider)
+                if self.config.tools_enabled
                 else []
             )
 
@@ -261,32 +261,32 @@ class Brain:
         """Clean up brain resources."""
         self.memory.cleanup()
         self.synapse.cleanup()
-        self.tentacles.cleanup()
+        self.tools.cleanup()
 
 
 async def create_brain(
-    name: str, description: str = "", tentacles: List[BaseTentacle] = None, **kwargs
+    name: str, description: str = "", tools: List[BaseTool] = None, **kwargs
 ) -> Brain:
     """Create a new brain with default or custom configuration."""
-    # Set tentacles_enabled based on whether tentacles were provided
-    has_tentacles = bool(tentacles)
+    # Set tools_enabled based on whether tools were provided
+    has_tools = bool(tools)
 
-    # Remove tentacles_enabled from kwargs if it exists to avoid conflicts
-    kwargs.pop("tentacles_enabled", None)
+    # Remove tools_enabled from kwargs if it exists to avoid conflicts
+    kwargs.pop("tools_enabled", None)
 
     config = BrainConfig(
         name=name,
         description=description or f"{name} - Powered by Polvo",
         system_prompt=kwargs.pop("system_prompt", f"You are {name}, an AI assistant."),
-        tentacles_enabled=has_tentacles,  # Set based on tentacles parameter
+        tools_enabled=has_tools,  # Set based on tools parameter
         **kwargs,
     )
 
-    # Set up tentacle registry if tentacles provided
-    tentacle_registry = None
-    if tentacles:
-        tentacle_registry = TentacleRegistry()
-        for tentacle in tentacles:
-            await tentacle_registry.register(tentacle)
+    # Set up tool registry if tools provided
+    tool_registry = None
+    if tools:
+        tool_registry = ToolRegistry()
+        for tool in tools:
+            await tool_registry.register(tool)
 
-    return Brain(config=config, tentacles=tentacle_registry)
+    return Brain(config=config, tools=tool_registry)

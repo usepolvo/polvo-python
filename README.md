@@ -6,8 +6,14 @@ Polvo is an open-source Python library designed to streamline the process of int
 
 ## Features
 
+- **Core**: The foundation of Polvo providing shared functionality:
+  - **Auth**: Flexible authentication handlers for various API protocols
+  - **Clients**: Templated API clients for quick integration development
+  - **Rate Limiters**: Smart strategies to manage API quotas and prevent throttling
+  - **Base Tentacles**: Core components for building integrations
+  - **Webhooks**: Secure webhook processing with signature validation, event handling, and an integrated server for receiving callbacks
 - **Brain**: A high-level abstraction for building AI-powered applications. The Brain manages cognitive processing, memory, and communication between components.
-- **Tentacles**: A unified interface for API integrations. Tentacles handle authentication, rate limiting, caching, and more.
+- **Tentacles**: Ready-to-use API integrations and tools that provide a unified interface. Tentacles handle authentication, rate limiting, caching, and more.
 - **LLM Tools**: Seamlessly integrate Tentacles into LLM tools, enabling AI agents to interact with external services.
 - **Async Support**: Built from the ground up with asynchronous programming for optimal performance.
 - **Developer Experience**: Clear abstractions, powerful utilities, and comprehensive documentation.
@@ -16,13 +22,13 @@ Polvo is an open-source Python library designed to streamline the process of int
 
 ```
 usepolvo/
-├── arms/                       # Shared functionality
+├── core/                       # Shared functionality
 │   ├── auth/                  # Authentication handlers
 │   ├── clients/               # API client templates
 │   ├── rate_limiters/         # Rate limiting strategies
-│   └── tentacles/             # Base integration components
+│   ├── tentacles/             # Base integration components
+│   └── webhooks/              # Webhook processing and server
 ├── brain/                      # High-level LLM abstractions
-├── ink/                        # Utilities and helpers
 └── tentacles/                  # Tools and integrations
 ```
 

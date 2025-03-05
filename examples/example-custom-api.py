@@ -3,11 +3,11 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from usepolvo.arms.clients.rest import RESTClient
-from usepolvo.arms.rate_limiters.simple import SimpleRateLimiter
-from usepolvo.arms.tentacles.api import APITentacle
-from usepolvo.arms.tentacles.base import TentacleDefinition
 from usepolvo.brain.base import create_brain
+from usepolvo.core.clients.rest import RESTClient
+from usepolvo.core.rate_limiters.simple import SimpleRateLimiter
+from usepolvo.core.tools.api import APITool
+from usepolvo.core.tools.base import ToolDefinition
 
 
 # User defines their models
@@ -78,16 +78,16 @@ class WeatherClient(RESTClient):
         return "mild"
 
 
-class WeatherTentacle(APITentacle[WeatherInput, WeatherOutput]):
-    """Weather information tentacle."""
+class WeatherTool(APITool[WeatherInput, WeatherOutput]):
+    """Weather information tool."""
 
     def __init__(self):
         self.client = WeatherClient()
         super().__init__(self.client)  # This will call _setup
 
     def _setup(self) -> None:
-        """Set up the weather tentacle definition."""
-        self._definition = TentacleDefinition(
+        """Set up the weather tool definition."""
+        self._definition = ToolDefinition(
             name="weather",
             description="""
             Get weather information for cities.
@@ -102,7 +102,7 @@ class WeatherTentacle(APITentacle[WeatherInput, WeatherOutput]):
         )
 
     async def execute(self, input: Union[WeatherInput, Dict[str, Any]]) -> WeatherOutput:
-        """Execute weather tentacle logic."""
+        """Execute weather tool logic."""
         # Convert dict to schema if needed
         if isinstance(input, dict):
             weather_input = WeatherInput(**input)
@@ -118,8 +118,8 @@ class WeatherTentacle(APITentacle[WeatherInput, WeatherOutput]):
 
 # Usage example
 async def example_usage():
-    # Create tentacle
-    weather = WeatherTentacle()
+    # Create tool
+    weather = WeatherTool()
 
     # 1. Using schema input
     schema_result = await weather(WeatherInput(operation="current", city="San Francisco"))
@@ -134,7 +134,7 @@ async def example_usage():
     print(f"Temperature (kwargs): {kwargs_result.temperature}°C")
 
     # 4. Using with Brain (which will use dict/kwargs format)
-    brain = await create_brain(name="Weather Assistant", tentacles=[weather])
+    brain = await create_brain(name="Weather Assistant", tools=[weather])
     response = await brain.process("What's the current weather in Tokyo?")
     print(f"Brain response: {response}")
 
