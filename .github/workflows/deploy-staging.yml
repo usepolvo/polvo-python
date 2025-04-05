@@ -10,7 +10,7 @@ on:
         default: true
   push:
     branches:
-      - develop
+      - main
     paths-ignore:
       - "README*.md"
       - ".gcloudignore"
