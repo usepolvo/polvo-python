@@ -7,15 +7,12 @@ name = "usepolvo"
 version = "1.0.1"
 description = "A comprehensive integration package supporting various services."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 dependencies = [
     "aiohttp==3.11.12",
-    "anthropic==0.45.2",
     "asyncio==3.4.3",
     "cryptography==44.0.1",
     "gql==3.5.1",
-    "numpy==2.2.3",
-    "openai==1.63.2",
     "pydantic-settings==2.7.1",
     "pydantic[email]==2.10.6",
     "python-dotenv==1.0.1",
@@ -29,7 +26,15 @@ email = "hi@usepolvo.com"
 
 [project.optional-dependencies]
 hubspot = ["hubspot-api-client==9.0.0"]
-all = ["hubspot-api-client==9.0.0"]
+gemini = ["google-genai==0.10.0"]
+openai = ["openai==1.63.2"]
+anthropic = ["anthropic==0.45.2"]
+all = [
+    "hubspot-api-client==9.0.0",
+    "google-genai==0.10.0",
+    "openai==1.63.2",
+    "anthropic==0.45.2",
+]
 
 [project.license]
 text = "MIT"
