@@ -1,0 +1,43 @@
+name: 🚀 Deploy production version [manual]
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to deploy"
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      bump_version:
+        description: "Bump version before deployment"
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: production-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-unit-tests:
+    uses: usepolvo/polvo-python/.github/workflows/run-unit-tests.yml@main
+    with:
+      source_branch: ${{ github.head_ref }}
+      source_folder: "src"
+      python_versions: '["3.10", "3.11", "3.12"]'
+    secrets: inherit
+
+  build-and-publish-package:
+    needs: run-unit-tests
+    permissions:
+      contents: write
+    uses: usepolvo/polvo-python/.github/workflows/publish-package.yml@main
+    with:
+      bump_version: ${{ inputs.bump_version }}
+      version_update: ${{ inputs.version }}
+      environment: production
+    secrets: inherit

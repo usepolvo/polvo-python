@@ -1,19 +1,9 @@
-name: 🪝 Pre-commit hook
+name: Pre-commit hook
 
 on:
   pull_request:
   push:
-    branches:
-      - develop
-    paths-ignore:
-      - "README*.md"
-      - ".gitignore"
-      - ".github/**"
-      - ".vscode/**"
-      - "Makefile"
-      - "examples/**"
-      - ".bumpversion.cfg"
-      - "pyproject.toml"
+    branches: [main]
 
 jobs:
   pre-commit:

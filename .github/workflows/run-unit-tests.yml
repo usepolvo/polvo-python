@@ -1,0 +1,78 @@
+name: 🧪 Run unit tests (tox)
+
+on:
+  workflow_call:
+    inputs:
+      python_versions:
+        description: "Python versions to test"
+        required: false
+        type: string
+        default: '["3.10", "3.11", "3.12"]'
+      source_branch:
+        description: "Branch to be checked out from"
+        required: false
+        type: string
+        default: "main"
+      target_branch:
+        description: "Target branch to compare against"
+        required: false
+        type: string
+        default: "main"
+      source_folder:
+        description: "Working directory to run tox in"
+        required: false
+        type: string
+        default: "src"
+
+  workflow_dispatch:
+    inputs:
+      python_versions:
+        description: "Python versions to test"
+        required: false
+        type: string
+        default: '["3.10", "3.11", "3.12"]'
+      source_repo:
+        description: "Repository to be checked out from"
+        required: false
+        type: string
+        default: "usepolvo/polvo-python"
+      source_branch:
+        description: "Branch to be checked out from"
+        required: false
+        type: string
+        default: "main"
+      source_folder:
+        description: "Working directory to run tox in"
+        required: false
+        type: string
+        default: "src"
+      target_branch:
+        description: "Target branch to compare against"
+        required: false
+        type: string
+        default: "main"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ${{ fromJson(inputs.python_versions) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          repository: ${{ inputs.source_repo || github.repository }}
+          ref: ${{ inputs.source_branch }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install tox
+        run: pip install tox tox-gh-actions
+
+      - name: Test with tox
+        working-directory: ${{ inputs.source_folder }}
+        run: tox

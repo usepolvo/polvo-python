@@ -1,0 +1,48 @@
+name: 🔬 Deploy staging version [auto]
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_version:
+        description: "Bump version before deployment"
+        required: true
+        type: boolean
+        default: true
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - "README*.md"
+      - ".gcloudignore"
+      - ".gitignore"
+      - ".github/**"
+      - ".vscode/**"
+      - "Makefile"
+      - "examples/**"
+      - ".bumpversion.cfg"
+      - "pyproject.toml"
+
+concurrency:
+  group: staging-${{ github.event.pull_request.number || github.ref }} # Cancel previous staging deployments
+  cancel-in-progress: true
+
+#Actions
+jobs:
+  run-unit-tests:
+    uses: usepolvo/polvo-python/.github/workflows/run-unit-tests.yml@main
+    with:
+      source_branch: ${{ github.head_ref }}
+      source_folder: "src"
+      python_versions: '["3.10", "3.11", "3.12"]'
+    secrets: inherit
+
+  build-and-publish-package:
+    needs: run-unit-tests
+    permissions:
+      contents: write
+    uses: usepolvo/polvo-python/.github/workflows/publish-package.yml@main
+    with:
+      bump_version: ${{ inputs.bump_version }}
+      version_update: patch
+      environment: development
+    secrets: inherit

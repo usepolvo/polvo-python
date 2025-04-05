@@ -1,0 +1,30 @@
+name: 🧪️ Deploy livetest version [auto]
+
+on:
+  workflow_dispatch:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+    paths-ignore:
+      - "README*.md"
+      - ".gcloudignore"
+      - ".gitignore"
+      - ".github/**"
+      - ".vscode/**"
+      - "Makefile"
+      - "examples/**"
+      - ".bumpversion.cfg"
+      - "pyproject.toml"
+
+concurrency:
+  group: livetest-${{ github.event.pull_request.number || github.ref }} # Cancel previous livetest deployments
+  cancel-in-progress: true
+
+#Actions
+jobs:
+  run-unit-tests:
+    uses: usepolvo/polvo-python/.github/workflows/run-unit-tests.yml@main
+    with:
+      source_branch: ${{ github.head_ref }}
+      source_folder: "src"
+      python_versions: '["3.10", "3.11", "3.12"]'
+    secrets: inherit

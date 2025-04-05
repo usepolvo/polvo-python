@@ -1,0 +1,113 @@
+name: 🚀 Build & Publish Package
+
+on:
+  workflow_call:
+    inputs:
+      source_branch:
+        description: "Source branch to be checked out from"
+        required: false
+        type: string
+        default: "main"
+      environment:
+        description: "Deployment environment (development or production)"
+        required: false
+        type: string
+        default: development
+      version_update:
+        description: "Semantic version update (patch, minor or major)"
+        required: false
+        type: string
+        default: patch
+      bump_version:
+        description: "Whether to bump version before publishing"
+        required: false
+        type: boolean
+        default: true
+
+  workflow_dispatch:
+    inputs:
+      source_repo:
+        description: "Source repository to be checked out from"
+        required: true
+        type: string
+        default: "usepolvo/polvo-python"
+      source_branch:
+        description: "Source branch to be checked out from"
+        required: true
+        type: string
+        default: "main"
+      environment:
+        description: "Deployment environment (development or production)"
+        required: true
+        type: choice
+        options:
+          - development
+          - production
+        default: development
+      version_update:
+        description: "Semantic version update (patch, minor or major)"
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      bump_version:
+        description: "Whether to bump version before publishing"
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  build-and-publish-package:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          repository: ${{ inputs.source_repo || github.repository }}
+          ref: ${{ inputs.source_branch }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+
+      - name: Install build-dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-build.txt
+
+      - name: Configure Git
+        run: |
+          git config --local user.name 'github-actions[bot]'
+          git config --local user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Bump up package version
+        if: inputs.bump_version
+        run: |
+          bump2version ${{ inputs.version_update }}
+
+      - name: Commit and push changes
+        if: inputs.bump_version
+        run: |
+          git add .
+          git commit --allow-empty -m "chore: version update"
+          git push
+
+      - name: Build package and publish
+        working-directory: src
+        env:
+          PYPI_REPOSITORY: ${{ inputs.environment == 'production' && 'pypi' || 'testpypi' }}
+          PYPI_TOKEN: ${{ inputs.environment == 'production' && secrets.PYPI_TOKEN || secrets.TEST_PYPI_TOKEN }}
+        run: |
+          echo "Using repository: ${PYPI_REPOSITORY}"
+          python -m build
+          python -m twine upload \
+          --repository ${PYPI_REPOSITORY} \
+          --username '__token__' \
+          --password ${PYPI_TOKEN} \
+          --verbose \
+          dist/*
