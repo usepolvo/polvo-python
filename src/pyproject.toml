@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "usepolvo"
-version = "1.1.0"
+version = "1.0.3"
 description = "A comprehensive integration package supporting various services."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,6 +20,7 @@ dependencies = [
     "requests==2.32.3",
     "tenacity==9.0.0",
 ]
+license = "MIT"
 [[project.authors]]
 name = "Caio Pizzol"
 email = "hi@usepolvo.com"
@@ -35,9 +36,6 @@ all = [
     "openai==1.63.2",
     "anthropic==0.45.2",
 ]
-
-[project.license]
-text = "MIT"
 
 [tool.black]
 line-length = 100

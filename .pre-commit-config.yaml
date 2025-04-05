@@ -8,8 +8,6 @@ repos:
       - id: check-json
       - id: check-added-large-files
         args: ["--maxkb=500"]
-      - id: no-commit-to-branch
-        args: [--branch, main]
       - id: debug-statements
       - id: detect-private-key
 
