@@ -74,8 +74,8 @@ async def main():
 
 ```python
 from pydantic import BaseModel, Field
-from usepolvo.arms.clients.rest import RESTClient
-from usepolvo.arms.tentacles.api import APITentacle
+from usepolvo.core.clients.rest import RESTClient
+from usepolvo.core.tentacles.api import APITentacle
 
 # Define your models
 class WeatherInput(BaseModel):

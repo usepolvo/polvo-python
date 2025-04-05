@@ -3,7 +3,6 @@ from typing import List
 
 from usepolvo.brain.base import create_brain
 from usepolvo.brain.config import BrainConfig, ModelProvider
-from usepolvo.tentacles.compute import MathTentacle
 
 
 async def test_model(
@@ -42,14 +41,6 @@ async def main():
         "Write a haiku about programming.",
     ]
 
-    math_questions = [
-        "What is 235 + 489?",
-        "Can you multiply 12 by 15?",
-    ]
-
-    # Initialize tentacles if needed
-    math_tentacle = MathTentacle()
-
     # Test Anthropic Models
     await test_model(
         name="Claude Assistant",
@@ -59,30 +50,12 @@ async def main():
         temperature=0.7,
     )
 
-    await test_model(
-        name="Claude with Tools",
-        provider=ModelProvider.ANTHROPIC,
-        model="claude-3-opus-20240229",
-        questions=math_questions,
-        tentacles=[math_tentacle],
-        temperature=0.7,
-    )
-
     # Test OpenAI Models
     await test_model(
         name="GPT Assistant",
         provider=ModelProvider.OPENAI,
         model="gpt-4-turbo-preview",
         questions=basic_questions,
-        temperature=0.7,
-    )
-
-    await test_model(
-        name="GPT with Tools",
-        provider=ModelProvider.OPENAI,
-        model="gpt-4-turbo-preview",
-        questions=math_questions,
-        tentacles=[math_tentacle],
         temperature=0.7,
     )
 
@@ -106,7 +79,7 @@ async def test_custom_config():
         },
     )
 
-    brain = await create_brain(tentacles=[MathTentacle()], **config.model_dump())
+    brain = await create_brain(**config.model_dump())
 
     question = "What is the square root of 256 multiplied by 1.5?"
     print(f"\n=== Testing Custom Configuration ===")

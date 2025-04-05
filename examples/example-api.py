@@ -1,8 +1,8 @@
 from usepolvo.brain.base import create_brain
-from usepolvo.tentacles.integrations.hubspot.companies import HubSpotCompaniesTentacle
-from usepolvo.tentacles.integrations.hubspot.contacts import HubSpotContactsTentacle
-from usepolvo.tentacles.integrations.hubspot.deals import HubSpotDealsTentacle
-from usepolvo.tentacles.integrations.hubspot.models import ContactInput, DealInput
+from usepolvo.tentacles.hubspot.companies import HubSpotCompaniesTentacle
+from usepolvo.tentacles.hubspot.contacts import HubSpotContactsTentacle
+from usepolvo.tentacles.hubspot.deals import HubSpotDealsTentacle
+from usepolvo.tentacles.hubspot.models import ContactInput, DealInput
 
 
 async def example_usage():

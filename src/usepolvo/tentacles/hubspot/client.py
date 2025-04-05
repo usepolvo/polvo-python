@@ -1,18 +1,19 @@
-# tentacles/integration/hubspot/client.py
+# tentacles/hubspot/client.py
 
 from pathlib import Path
 from typing import List, Optional
 
 import hubspot
-from usepolvo.ink.tokens import SecureTokenStore
 
 from usepolvo.core.auth.oauth2 import OAuth2Auth
-from usepolvo.tentacles.integrations.hubspot.config import get_settings
+from usepolvo.core.auth.tokens import TokenStore
+from usepolvo.core.clients.rest import RESTClient
+from usepolvo.tentacles.hubspot.config import get_settings
 
 
-class HubSpotBaseClient:
+class HubSpotClient(RESTClient):
     """
-    Base HubSpot client that leverages the official HubSpot SDK.
+    HubSpot client that leverages the official HubSpot SDK.
     Handles authentication and provides access to SDK clients.
     """
 
@@ -46,7 +47,7 @@ class HubSpotBaseClient:
         self.settings = get_settings()
 
         # Set up token storage
-        self.token_store = SecureTokenStore(
+        self.token_store = TokenStore(
             encryption_key=encryption_key, storage_path=token_storage_path
         )
 

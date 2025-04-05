@@ -9,7 +9,7 @@ from cryptography.fernet import Fernet
 from usepolvo.core.config import get_settings
 
 
-class SecureTokenStore:
+class TokenStore:
     """Optional secure token storage utility."""
 
     def __init__(self, encryption_key: Optional[str] = None, storage_path: Optional[Path] = None):

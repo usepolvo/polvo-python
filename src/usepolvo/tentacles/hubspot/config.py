@@ -1,9 +1,9 @@
-# tentacles/integration/hubspot/config.py
+# tentacles/hubspot/config.py
 
 from functools import lru_cache
 from typing import List, Optional
 
-from usepolvo.beak.config import PolvoSettings
+from usepolvo.core.config import PolvoSettings
 
 
 @lru_cache

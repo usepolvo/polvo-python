@@ -1,9 +1,6 @@
 # brain/base.py
 import os
-from enum import Enum
 from typing import Any, Dict, List, Optional
-
-from pydantic import BaseModel
 
 from usepolvo.brain.config import BrainConfig, ModelProvider
 from usepolvo.brain.memory import Memory
