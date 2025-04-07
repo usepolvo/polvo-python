@@ -31,6 +31,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Security improvements
 
+## [1.2.0] - 2024-04-07
+
+### Added
+
+- Google Drive tentacle with comprehensive file operations support:
+  - Added multi-tenant OAuth2 authentication support
+  - Added file operations (list, get, download, create, update, delete)
+  - Integration with Google's official Python client library
+  - Example scripts demonstrating usage patterns
+
+### Changed
+
+- Restructured Google Drive tentacle to follow resource-specific pattern:
+  - Moved file operations to dedicated Files class
+  - Leveraged core OAuth2Auth implementation
+  - Improved code organization and maintainability
+
 ## [1.1.0] - 2024-04-05
 
 ### Added
