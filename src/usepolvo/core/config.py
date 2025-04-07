@@ -1,6 +1,7 @@
 # beak/config.py
 
 from functools import lru_cache
+from typing import Optional
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -25,4 +26,4 @@ class PolvoSettings(BaseSettings):
         extra="ignore",
         case_sensitive=False,
     )
-    ENCRYPTION_KEY: str
+    ENCRYPTION_KEY: Optional[str] = None
