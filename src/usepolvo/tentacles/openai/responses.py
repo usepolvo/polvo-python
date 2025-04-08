@@ -29,7 +29,6 @@ class Responses:
         input: Optional[str] = None,
         temperature: Optional[float] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
-        seed: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Create a response using OpenAI's responses API.
@@ -40,7 +39,6 @@ class Responses:
             input: Input text for the response
             temperature: Sampling temperature (0-2)
             tool_choice: Tool choice strategy
-            seed: Random seed for deterministic results
 
         Returns:
             Complete API response
@@ -58,7 +56,6 @@ class Responses:
                 input=input,
                 temperature=temperature,
                 tool_choice=tool_choice,
-                seed=seed,
             )
             return response.model_dump()
         except openai.RateLimitError:
