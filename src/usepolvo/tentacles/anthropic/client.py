@@ -9,9 +9,10 @@ from usepolvo.core.clients.rest import RESTClient
 from usepolvo.core.rate_limiters.adaptive import AdaptiveRateLimiter
 from usepolvo.tentacles.anthropic.config import get_settings
 from usepolvo.tentacles.anthropic.messages import Messages
+from usepolvo.tentacles.base import BaseTentacle
 
 
-class AnthropicTentacle(RESTClient):
+class AnthropicTentacle(RESTClient, BaseTentacle):
     """
     Anthropic client that leverages the official SDK.
     Handles authentication and rate limiting.
@@ -113,3 +114,84 @@ class AnthropicTentacle(RESTClient):
                     result["content"] = response.content
 
             return result
+
+    def generate(
+        self,
+        messages: List[Dict[str, Any]],
+        model: Optional[str] = None,
+        max_tokens: Optional[int] = 1024,
+        temperature: Optional[float] = None,
+        system_message: Optional[str] = None,
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Generate a response using Anthropic's Claude model.
+
+        Implementation of the BaseTentacle.generate method using Anthropic's API.
+
+        Args:
+            messages: List of message objects
+            model: Model to use, defaults to instance default_model
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+            system_message: System instructions for Claude
+            tools: Tool definitions for function calling
+            tool_choice: Specify which tool to use
+            **kwargs: Additional parameters passed to Anthropic's API
+
+        Returns:
+            Standardized response dictionary
+        """
+        # Pass all parameters to the Messages.create method
+        params = {
+            "messages": messages,
+            "model": model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "system": system_message,  # Anthropic uses 'system' param
+            "tools": tools,
+            "tool_choice": tool_choice,
+        }
+
+        # Add any additional kwargs
+        params.update({k: v for k, v in kwargs.items() if v is not None})
+
+        # Remove None values
+        params = {k: v for k, v in params.items() if v is not None}
+
+        return self.messages.create(**params)
+
+    def generate_stream(
+        self,
+        messages: List[Dict[str, Any]],
+        model: Optional[str] = None,
+        max_tokens: Optional[int] = 1024,
+        temperature: Optional[float] = None,
+        system_message: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        Generate a streaming response using Anthropic's Claude model.
+
+        Implementation of the BaseTentacle.generate_stream method.
+
+        Args:
+            messages: List of message objects
+            model: Model to use, defaults to instance default_model
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+            system_message: System instructions for Claude
+            **kwargs: Additional parameters
+
+        Returns:
+            A stream of response chunks
+        """
+        return self.messages.with_streaming(
+            messages=messages,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            system=system_message,  # Anthropic uses 'system' param
+        )

@@ -9,12 +9,13 @@ from openai import OpenAI as OpenAIClient
 from usepolvo.core.auth.api_key import APIKeyAuth
 from usepolvo.core.clients.rest import RESTClient
 from usepolvo.core.rate_limiters.adaptive import AdaptiveRateLimiter
+from usepolvo.tentacles.base import BaseTentacle
 from usepolvo.tentacles.openai.chat import ChatCompletions
 from usepolvo.tentacles.openai.config import get_settings
 from usepolvo.tentacles.openai.embeddings import Embeddings
 
 
-class OpenAITentacle(RESTClient):
+class OpenAITentacle(RESTClient, BaseTentacle):
     """
     OpenAI client that leverages the official SDK.
     Handles authentication and rate limiting.
@@ -97,3 +98,102 @@ class OpenAITentacle(RESTClient):
         # Simple token estimation - can be improved with tiktoken
         prompt_tokens = sum(len(m.get("content", "")) for m in messages) // 4
         return prompt_tokens + max_tokens
+
+    def generate(
+        self,
+        messages: List[Dict[str, Any]],
+        model: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = 0.7,
+        system_message: Optional[str] = None,
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Generate a response using OpenAI's models.
+
+        Implementation of the BaseTentacle.generate method.
+
+        Args:
+            messages: List of message objects
+            model: Model to use, defaults to instance default_model
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+            system_message: System instructions
+            tools: Tool definitions for function calling
+            tool_choice: Specify which tool to use
+            **kwargs: Additional parameters passed to OpenAI's API
+
+        Returns:
+            Standardized response dictionary
+        """
+        # For OpenAI, we need to add system message to the messages list
+        formatted_messages = []
+
+        # Add system message if provided
+        if system_message:
+            formatted_messages.append({"role": "system", "content": system_message})
+
+        # Add all other messages
+        formatted_messages.extend(messages)
+
+        # Pass parameters to the ChatCompletions.create method
+        params = {
+            "messages": formatted_messages,
+            "model": model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "tools": tools,
+            "tool_choice": tool_choice,
+        }
+
+        # Add any additional kwargs
+        params.update({k: v for k, v in kwargs.items() if v is not None})
+
+        # Remove None values
+        params = {k: v for k, v in params.items() if v is not None}
+
+        return self.chat.create(**params)
+
+    def generate_stream(
+        self,
+        messages: List[Dict[str, Any]],
+        model: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = 0.7,
+        system_message: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        Generate a streaming response using OpenAI's models.
+
+        Implementation of the BaseTentacle.generate_stream method.
+
+        Args:
+            messages: List of message objects
+            model: Model to use, defaults to instance default_model
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+            system_message: System instructions
+            **kwargs: Additional parameters
+
+        Returns:
+            A stream of response chunks
+        """
+        # For OpenAI, we need to add system message to the messages list
+        formatted_messages = []
+
+        # Add system message if provided
+        if system_message:
+            formatted_messages.append({"role": "system", "content": system_message})
+
+        # Add all other messages
+        formatted_messages.extend(messages)
+
+        return self.chat.with_streaming(
+            messages=formatted_messages,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )

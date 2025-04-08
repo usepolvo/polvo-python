@@ -8,12 +8,13 @@ from google.genai import types
 from usepolvo.core.auth.api_key import APIKeyAuth
 from usepolvo.core.clients.rest import RESTClient
 from usepolvo.core.rate_limiters.adaptive import AdaptiveRateLimiter
+from usepolvo.tentacles.base import BaseTentacle
 from usepolvo.tentacles.gemini.config import get_settings
 from usepolvo.tentacles.gemini.embeddings import Embeddings
 from usepolvo.tentacles.gemini.generation import Generation
 
 
-class GeminiTentacle(RESTClient):
+class GeminiTentacle(RESTClient, BaseTentacle):
     """
     Google Gemini client that leverages the official SDK.
     Handles authentication and rate limiting.
@@ -122,3 +123,124 @@ class GeminiTentacle(RESTClient):
                     result["candidates"].append(cand_dict)
 
             return result
+
+    def generate(
+        self,
+        messages: List[Dict[str, Any]],
+        model: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        system_message: Optional[str] = None,
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Generate a response using Google Gemini.
+
+        Implementation of the BaseTentacle.generate method.
+
+        Args:
+            messages: List of message objects
+            model: Model to use, defaults to instance default_model
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+            system_message: System instructions
+            tools: Tool definitions for function calling
+            tool_choice: Specify which tool to use
+            **kwargs: Additional parameters
+
+        Returns:
+            Standardized response dictionary
+        """
+        # Convert messages to Gemini format
+        contents = self._format_messages_for_gemini(messages)
+
+        # Pass generation configuration
+        generation_config = {}
+        if max_tokens:
+            generation_config["max_output_tokens"] = max_tokens
+        if temperature:
+            generation_config["temperature"] = temperature
+
+        # Generate content
+        return self.generation.generate_content(
+            contents=contents,
+            model=model,
+            generation_config=generation_config if generation_config else None,
+            tools=tools,
+            system_instruction=system_message,  # Gemini uses system_instruction
+        )
+
+    def generate_stream(
+        self,
+        messages: List[Dict[str, Any]],
+        model: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        system_message: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        Generate a streaming response using Google Gemini.
+
+        Implementation of the BaseTentacle.generate_stream method.
+
+        Args:
+            messages: List of message objects
+            model: Model to use, defaults to instance default_model
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+            system_message: System instructions
+            **kwargs: Additional parameters
+
+        Returns:
+            A stream of response chunks
+        """
+        # Convert messages to Gemini format
+        contents = self._format_messages_for_gemini(messages)
+
+        # Prepare generation config
+        generation_config = {"stream": True}
+        if max_tokens:
+            generation_config["max_output_tokens"] = max_tokens
+        if temperature:
+            generation_config["temperature"] = temperature
+
+        # Create model with system instruction
+        model_instance = genai.GenerativeModel(
+            model_name=model or self.default_model,
+            generation_config=generation_config,
+            system_instruction=system_message,
+        )
+
+        # Generate streaming response
+        return model_instance.generate_content(contents)
+
+    def _format_messages_for_gemini(self, messages: List[Dict[str, Any]]) -> Any:
+        """
+        Format messages from the standard format to Gemini's expected format.
+
+        Args:
+            messages: List of messages in the standard format
+
+        Returns:
+            Messages in Gemini's format
+        """
+        # For simple cases, we can use the first message content directly
+        if len(messages) == 1 and "content" in messages[0]:
+            return messages[0]["content"]
+
+        # For more complex conversations, format as Gemini expects
+        formatted_messages = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+
+            if role == "user":
+                formatted_messages.append({"role": "user", "parts": [{"text": content}]})
+            elif role == "assistant":
+                formatted_messages.append({"role": "model", "parts": [{"text": content}]})
+            # Gemini doesn't use system messages in the messages list
+
+        return formatted_messages
