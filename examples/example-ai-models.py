@@ -139,7 +139,6 @@ async def example_openai():
         tools=[{"type": "web_search_preview"}],
         input="What was a positive news story from today?",
         temperature=0.7,
-        max_tokens=300,
     )
     print(f"OpenAI Responses API result: {extract_text(responses_result)[:150]}...\n")
 

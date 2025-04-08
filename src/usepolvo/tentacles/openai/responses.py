@@ -29,7 +29,6 @@ class Responses:
         input: Optional[str] = None,
         temperature: Optional[float] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
-        max_tokens: Optional[int] = None,
         seed: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
@@ -41,16 +40,15 @@ class Responses:
             input: Input text for the response
             temperature: Sampling temperature (0-2)
             tool_choice: Tool choice strategy
-            max_tokens: Maximum tokens to generate
             seed: Random seed for deterministic results
 
         Returns:
             Complete API response
         """
         # Apply rate limiting
-        estimated_tokens = self.client._estimate_tokens(
-            [{"content": input}] if input else [], max_tokens or 1000
-        )
+        # estimated_tokens = self.client._estimate_tokens(
+        #     [{"content": input}] if input else [], max_tokens or 1000
+        # )
         # self.client.rate_limiter.acquire(resource_amount=estimated_tokens)
 
         try:
@@ -60,7 +58,6 @@ class Responses:
                 input=input,
                 temperature=temperature,
                 tool_choice=tool_choice,
-                max_tokens=max_tokens,
                 seed=seed,
             )
             return response.model_dump()
