@@ -1,6 +1,6 @@
 # polvo-python
 
-Version: 1.1.2
+Version: 1.1.3
 
 Polvo is an open-source Python library designed to streamline the process of integrating multiple APIs into your applications. With a focus on developer experience, Polvo provides a suite of tools and abstractions that make it easy to interact with third-party services, both within and outside the context of Large Language Models (LLMs).
 
