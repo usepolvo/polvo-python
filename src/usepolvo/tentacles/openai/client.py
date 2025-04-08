@@ -13,6 +13,7 @@ from usepolvo.tentacles.base import BaseTentacle
 from usepolvo.tentacles.openai.chat import ChatCompletions
 from usepolvo.tentacles.openai.config import get_settings
 from usepolvo.tentacles.openai.embeddings import Embeddings
+from usepolvo.tentacles.openai.responses import Responses
 
 
 class OpenAITentacle(RESTClient, BaseTentacle):
@@ -82,6 +83,7 @@ class OpenAITentacle(RESTClient, BaseTentacle):
         # Initialize API resources
         self._chat = ChatCompletions(self)
         self._embeddings = Embeddings(self)
+        self._responses = Responses(self)
 
     @property
     def chat(self) -> ChatCompletions:
@@ -92,6 +94,11 @@ class OpenAITentacle(RESTClient, BaseTentacle):
     def embeddings(self) -> Embeddings:
         """Access the Embeddings API."""
         return self._embeddings
+
+    @property
+    def responses(self) -> Responses:
+        """Access the Responses API."""
+        return self._responses
 
     def _estimate_tokens(self, messages: List[Dict[str, str]], max_tokens: int) -> int:
         """Estimate the number of tokens used in a request and response."""

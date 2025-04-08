@@ -132,6 +132,17 @@ async def example_openai():
     embedding_length = len(embeddings["data"][0]["embedding"])
     print(f"OpenAI embedding generated with {embedding_length} dimensions\n")
 
+    # Using provider-specific API for responses
+    print("Using provider-specific API for responses:")
+    responses_result = openai.responses.create(
+        model="gpt-4o-mini",
+        tools=[{"type": "web_search_preview"}],
+        input="What was a positive news story from today?",
+        temperature=0.7,
+        max_tokens=300,
+    )
+    print(f"OpenAI Responses API result: {extract_text(responses_result)[:150]}...\n")
+
 
 async def example_gemini():
     """Example usage of Google Gemini API (provider-specific)."""
