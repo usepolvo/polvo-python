@@ -134,11 +134,13 @@ async def example_openai():
 
     # Using provider-specific API for responses
     print("Using provider-specific API for responses:")
+    instructions = "You are a helpful assistant."
     responses_result = openai.responses.create(
         model="gpt-4o-mini",
         tools=[{"type": "web_search_preview"}],
         input="What was a positive news story from today?",
         temperature=0.7,
+        instructions=instructions,
     )
     print(f"OpenAI Responses API result: {extract_text(responses_result)[:150]}...\n")
 
