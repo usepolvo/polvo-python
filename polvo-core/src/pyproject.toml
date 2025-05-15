@@ -15,9 +15,16 @@ name = "Caio Pizzol"
 email = "hi@usepolvo.com"
 
 [project.optional-dependencies]
-dev = ["black", "isort", "mypy", "pytest", "pytest-cov", "pytest-asyncio"]
-docs = ["sphinx", "sphinx-rtd-theme"]
-all = ["usepolvo-core[dev,docs]"]
+dev = [
+    "black",
+    "isort",
+    "pre-commit",
+    "toml",
+    "pytest",
+    "pytest-cov",
+    "pytest-asyncio",
+]
+all = ["usepolvo-core[dev]"]
 
 [tool.black]
 line-length = 100

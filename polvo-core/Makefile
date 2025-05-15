@@ -83,55 +83,6 @@ diff-cover-only: ensure-diff-cover
 diff-cover: test diff-cover-only
 	@echo "\n> 🎉 Tests and diff-cover completed.\n"
 
-# Code formatting and organization
-fmt:
-	@echo "🎨 Formatting code..."
-	black --line-length 120 .
-
-sort:
-	@echo "\n> ⬇️ Sorting requirements and env files...\n"
-	@for file in requirements*.txt; do \
-		if [ -f $$file ]; then \
-			sort --ignore-case -u -o $$file{,}; \
-			echo "Sorted $$file"; \
-		fi \
-	done
-	@for file in .env*; do \
-		if [ -f $$file ]; then \
-			sort --ignore-case -u -o $$file{,}; \
-			echo "Sorted $$file"; \
-		fi \
-	done
-
-freeze:
-	@echo "\n> 🧊 Freezing requirements...\n"
-	@for file in requirements*.txt; do \
-		echo "Freezing $$file"; \
-		cp "$$file" "$$file.backup"; \
-		uv pip install -q --python .venv/bin/python -r "$$file"; \
-		rm -f "$$file.temp"; touch "$$file.temp"; \
-		grep -v "^#" "$$file" | grep -v "^\s*$$" | while read -r line; do \
-			base_pkg=`echo "$$line" | cut -d'[' -f1 | cut -d'=' -f1 | cut -d'>' -f1 | cut -d'<' -f1 | xargs`; \
-			if [ -n "$$base_pkg" ]; then \
-				pkg_with_extras=`echo "$$line" | grep -o "[a-zA-Z0-9_.-]\+\(\[[a-zA-Z0-9_,.-]\+\]\)\?" | head -1`; \
-				if [ -z "$$pkg_with_extras" ]; then pkg_with_extras="$$base_pkg"; fi; \
-				ver=`uv pip list --python .venv/bin/python | grep "^$$base_pkg " | awk '{print $$2}'`; \
-				if [ -n "$$ver" ]; then \
-					echo "$$pkg_with_extras==$$ver" >> "$$file.temp"; \
-				fi; \
-			fi; \
-		done; \
-		if [ -s "$$file.temp" ]; then \
-			mv "$$file.temp" "$$file"; \
-			echo "Successfully froze $$file"; \
-		else \
-			mv "$$file.backup" "$$file"; \
-			echo "Warning: Could not freeze $$file, restored from backup"; \
-		fi; \
-		rm -f "$$file.backup" 2>/dev/null || true; \
-	done
-	@python scripts/update_pyproject.py || echo "Warning: update_pyproject.py script failed"
-
 # Cleanup targets
 clean-build:
 	@echo "🗑️ Cleaning build artifacts..."
@@ -149,11 +100,11 @@ build: clean-build
 
 publish-test: build
 	@echo "🧪 Publishing to test repository..."
-	python -m twine upload --repository usepolvo-test src/dist/*
+	python -m twine upload --repository usepolvo-core-test src/dist/*
 
 publish: build
 	@echo "🚀 Publishing to main repository..."
-	python -m twine upload --repository usepolvo src/dist/*
+	python -m twine upload --repository usepolvo-core src/dist/*
 
 # Version bump targets
 bump-patch:

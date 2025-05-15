@@ -1,7 +1,7 @@
 .DS_Store
 .vscode/
 dist/
-usepolvo.egg-info/
+*.egg-info/
 .env
 Pipfile*
 *.log
