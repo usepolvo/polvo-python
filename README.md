@@ -272,10 +272,10 @@ response = polvo.get('https://api.example.com/data',
 
 ## 📚 Documentation
 
-- [Getting Started](https://docs.polvo.dev/quickstart)
-- [Authentication Guide](https://docs.polvo.dev/auth)
-- [API Reference](https://docs.polvo.dev/api)
-- [Examples](https://docs.polvo.dev/examples)
+- [Getting Started](https://docs.usepolvo.com/quickstart)
+- [Authentication Guide](https://docs.usepolvo.com/auth)
+- [API Reference](https://docs.usepolvo.com/api)
+- [Examples](https://docs.usepolvo.com/examples)
 
 ## 🤝 Contributing
 
