@@ -1,5 +1,0 @@
-build==1.2.2.post1
-bump2version==1.0.1
-setuptools==75.3.2
-twine==6.1.0
-wheel==0.45.1
