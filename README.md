@@ -1,100 +1,107 @@
 # Polvo v2 🐙
 
-**Simple, production-ready API client**
+**Production-ready HTTP client with OAuth2, rate limiting, and retries built-in**
 
-A requests-like library that handles the hard parts of API integration:
-
-- OAuth2 with automatic token refresh and multi-tenant support
-- Smart rate limiting and retry with exponential backoff
-- Secure token storage with encryption
-- Circuit breaker for cascading failure prevention
+The missing layer between `requests` and enterprise service meshes. Handle the hard parts of API integration without the complexity.
 
 ## 🚀 Quick Start
 
 ```python
 import polvo
 
-# Simple usage
-api = polvo.API("https://api.example.com")
-response = api.get("/users")
+# Simple as requests
+response = polvo.get('https://api.github.com/users/octocat')
 print(response.json())
 
 # With authentication
-api = polvo.API("https://api.example.com", auth=polvo.auth.bearer("your_token"))
-
-# Multi-tenant OAuth2 (the crown jewel)
-oauth = polvo.auth.oauth2(
-    client_id="your_client_id",
-    client_secret="your_secret",
-    token_url="https://api.example.com/oauth/token"
+response = polvo.get(
+    'https://api.example.com/users',
+    auth=polvo.auth.bearer('your_token')
 )
-api = polvo.API("https://api.example.com", auth=oauth)
 
-# For different tenants
-tenant_api = api.for_tenant("tenant_123")
+# For production workloads, use a session
+with polvo.Session() as session:
+    session.auth = polvo.auth.oauth2(
+        client_id='your_id',
+        client_secret='your_secret',
+        token_url='https://auth.example.com/token'
+    )
+    response = session.get('https://api.example.com/protected')
 ```
 
-## 🎯 Key Features
+## 🎯 Why Polvo?
 
-### 🔐 **OAuth2Flow** - The Crown Jewel
-
-Handles complex OAuth2 flows transparently with automatic token refresh and multi-tenant support:
+**Simple things stay simple:**
 
 ```python
-# Set up once, use everywhere
-oauth = polvo.auth.oauth2(
-    client_id="your_client_id",
-    client_secret="your_secret",
-    token_url="https://api.example.com/oauth/token",
-    scope="read write"
+# Just like requests
+data = polvo.get('https://api.example.com/data').json()
+```
+
+**Hard things become easy:**
+
+```python
+# OAuth2 with automatic token refresh
+session = polvo.Session(
+    auth=polvo.auth.OAuth2(
+        flow='client_credentials',
+        client_id='your_id',
+        client_secret='your_secret',
+        token_url='https://auth.example.com/token',
+        token_cache='~/.polvo/tokens.json'  # Explicit, encrypted by default
+    ),
+    retry=True,  # Exponential backoff by default
+    rate_limit='adaptive'  # Reads API headers automatically
+)
+```
+
+## 🔐 OAuth2 Done Right
+
+The crown jewel - production-ready OAuth2 that actually works:
+
+```python
+# Explicit token storage (encrypted by default)
+oauth = polvo.auth.OAuth2(
+    flow='client_credentials',
+    client_id='your_id',
+    client_secret='your_secret',
+    token_url='https://auth.example.com/token',
+    token_cache='~/.polvo/tokens.json',  # You know where tokens live
+    cache_encryption=True  # Explicit choice
 )
 
-# Automatically handles token refresh
-api = polvo.API("https://api.example.com", auth=oauth)
+# Use it anywhere
+response = polvo.get('https://api.example.com/data', auth=oauth)
+
+# Or in a session for connection pooling
+session = polvo.Session(auth=oauth)
 
 # Multi-tenant support
-tenant_a_api = api.for_tenant("tenant_a")
-tenant_b_api = api.for_tenant("tenant_b")  # Different tokens automatically
+session.set_tenant('customer_123')  # Switches token context
+response = session.get('/tenant-specific-data')
 ```
 
-### 🛡️ **Production-Ready Resilience**
-
-Built-in patterns that prevent production incidents:
+## 🛡️ Production Patterns Built-In
 
 ```python
-# Exponential backoff with jitter
-retry_strategy = polvo.retry.exponential_backoff(max_retries=5)
+# Everything configured in one place
+session = polvo.Session(
+    base_url='https://api.example.com',
+    auth=polvo.auth.bearer('token'),
 
-# Adaptive rate limiting (reads API headers)
-rate_limiter = polvo.rate_limit.adaptive()
+    # Retry configuration (sensible defaults)
+    retry=True,  # or retry=3 for max attempts
+    retry_backoff='exponential',  # with jitter
 
-# Circuit breaker prevents cascading failures
-from polvo.resilience import CircuitBreaker
-circuit_breaker = CircuitBreaker(failure_threshold=5)
+    # Rate limiting
+    rate_limit='adaptive',  # or rate_limit=10 for 10 req/s
 
-api = polvo.API(
-    "https://api.example.com",
-    retry=retry_strategy,
-    rate_limit=rate_limiter,
-    circuit_breaker=circuit_breaker
+    # Timeouts
+    timeout=30,  # Same as requests
+
+    # Circuit breaker
+    circuit_breaker={'failure_threshold': 5, 'recovery_timeout': 60}
 )
-```
-
-### 🔒 **Secure Token Storage**
-
-Multiple storage backends with encryption:
-
-```python
-# Encrypted file storage (default)
-storage = polvo.storage.encrypted_file("~/.polvo/tokens.enc")
-
-# Redis for multiple instances
-storage = polvo.storage.redis(host="redis.example.com")
-
-# Memory for testing
-storage = polvo.storage.memory()
-
-oauth = polvo.auth.oauth2(..., storage=storage)
 ```
 
 ## 📦 Installation
@@ -102,136 +109,177 @@ oauth = polvo.auth.oauth2(..., storage=storage)
 ```bash
 pip install polvo
 
-# With Redis support
-pip install polvo[redis]
+# With optional dependencies
+pip install polvo[redis]  # For Redis token storage
+pip install polvo[all]    # Everything
 ```
 
-## 🔧 Configuration Examples
+## 🔧 Common Patterns
 
-### Basic API Client
+### Simple One-off Requests
 
 ```python
 import polvo
 
-# Simple requests-like interface
-api = polvo.API("https://api.example.com")
+# GET
+data = polvo.get('https://api.example.com/users').json()
 
-# All standard HTTP methods
-response = api.get("/users", params={"page": 1})
-response = api.post("/users", json={"name": "John"})
-response = api.put("/users/123", json={"name": "Jane"})
-response = api.delete("/users/123")
-```
+# POST with JSON
+response = polvo.post(
+    'https://api.example.com/users',
+    json={'name': 'Alice', 'email': 'alice@example.com'}
+)
 
-### Authentication Strategies
-
-```python
-# Bearer token
-auth = polvo.auth.bearer("your_token")
+# With headers
+response = polvo.get(
+    'https://api.example.com/data',
+    headers={'X-API-Key': 'secret'}
+)
 
 # Basic auth
-auth = polvo.auth.basic("username", "password")
+response = polvo.get(url, auth=('username', 'password'))
+```
 
-# API key
-auth = polvo.auth.api_key("your_key", header_name="X-API-Key")
+### Production Sessions
 
-# OAuth2 (recommended for production)
-auth = polvo.auth.oauth2(
-    client_id="your_client_id",
-    client_secret="your_secret",
-    token_url="https://api.example.com/oauth/token"
+```python
+# Configure once, use everywhere
+session = polvo.Session(
+    base_url='https://api.example.com',
+    headers={'User-Agent': 'MyApp/1.0'},
+    auth=polvo.auth.bearer('token'),
+    retry=True,
+    rate_limit='adaptive'
+)
+
+# Clean URLs - no leading slash needed
+users = session.get('users').json()
+user = session.get(f'users/{user_id}').json()
+
+# Full URL still works
+response = session.get('https://other-api.com/data')
+```
+
+### Authentication Patterns
+
+```python
+# Bearer tokens (most common)
+auth = polvo.auth.bearer('your_token')
+
+# OAuth2 Client Credentials
+auth = polvo.auth.OAuth2(
+    flow='client_credentials',
+    client_id='id',
+    client_secret='secret',
+    token_url='https://auth.example.com/token'
+)
+
+# OAuth2 with refresh tokens
+auth = polvo.auth.OAuth2(
+    flow='authorization_code',
+    client_id='id',
+    client_secret='secret',
+    token_url='https://auth.example.com/token',
+    refresh_token='your_refresh_token'
+)
+
+# API Key
+auth = polvo.auth.api_key('key123', header='X-API-Key')
+
+# Custom auth class
+class CustomAuth(polvo.auth.AuthBase):
+    def apply(self, request):
+        request.headers['X-Custom'] = 'value'
+        return request
+```
+
+### Multi-tenant SaaS
+
+```python
+# Explicit tenant management
+oauth = polvo.auth.OAuth2(
+    client_id='app_id',
+    client_secret='app_secret',
+    token_url='https://auth.example.com/token',
+    token_cache='~/.polvo/tokens/{tenant}.json'  # Templated path
+)
+
+session = polvo.Session(auth=oauth)
+
+# Switch tenants on the fly
+for tenant_id in ['customer_a', 'customer_b']:
+    session.set_tenant(tenant_id)
+    data = session.get('data').json()
+    process_tenant_data(tenant_id, data)
+```
+
+### Advanced Configuration
+
+```python
+# Fine-grained control when you need it
+session = polvo.Session(
+    # Retry configuration
+    retry=polvo.retry.ExponentialBackoff(
+        max_attempts=5,
+        base_delay=1.0,
+        max_delay=60.0,
+        jitter=True,
+        retry_on=[500, 502, 503, 504]  # Specific status codes
+    ),
+
+    # Rate limiting
+    rate_limit=polvo.ratelimit.TokenBucket(
+        rate=10,  # requests per second
+        capacity=100  # burst capacity
+    ),
+
+    # Custom storage backend
+    token_storage=polvo.storage.Redis(
+        host='localhost',
+        port=6379,
+        prefix='myapp:tokens:'
+    )
 )
 ```
 
-### Rate Limiting Strategies
+## 🏗️ Design Principles
+
+1. **Requests compatibility**: If you know `requests`, you know `polvo`
+2. **Progressive disclosure**: Simple by default, powerful when needed
+3. **Explicit > Implicit**: You control where tokens are stored
+4. **Production-first**: Secure defaults, observable behavior
+5. **Stateless functions**: Module-level functions for simple cases
+
+## 🔄 Migration from requests
 
 ```python
-# Fixed rate limit
-rate_limiter = polvo.rate_limit.fixed(requests_per_second=10)
+# Before (requests)
+import requests
+response = requests.get('https://api.example.com/data',
+                       headers={'Authorization': 'Bearer token'})
 
-# Adaptive (reads API headers)
-rate_limiter = polvo.rate_limit.adaptive(initial_requests_per_second=5)
-
-# Conservative for strict APIs
-rate_limiter = polvo.rate_limit.conservative(requests_per_second=1)
-
-# Burst traffic
-rate_limiter = polvo.rate_limit.burst(requests_per_second=5, burst_size=20)
-```
-
-### Retry Strategies
-
-```python
-# Exponential backoff (recommended)
-retry = polvo.retry.exponential_backoff(max_retries=5)
-
-# Linear backoff
-retry = polvo.retry.linear_backoff(max_retries=3, delay=2.0)
-
-# Immediate retry
-retry = polvo.retry.immediate(max_retries=2)
-```
-
-## 🏗️ Architecture
-
-Polvo v2 is designed around **progressive disclosure**:
-
-- **Simple cases are simple**: `polvo.API("url").get("/endpoint")`
-- **Complex cases are possible**: Full control over auth, retry, rate limiting
-- **No magic**: Clear, understandable behavior
-- **Single entry point**: `polvo.API()` - no hunting for the right class
-
-### Core Components
-
-1. **API**: Main client with requests-like interface
-2. **Auth**: Authentication strategies (Bearer, OAuth2, etc.)
-3. **Storage**: Token storage backends (encrypted file, Redis, memory)
-4. **Resilience**: Retry, rate limiting, circuit breaker patterns
-
-## 🆚 Migration from Polvo v1
-
-Polvo v2 replaces the complex Brain/Tentacles architecture with a simple, familiar interface:
-
-```python
-# v1 (complex)
-from usepolvo.brain import create_brain
-from usepolvo.tentacles.integrations.api import APITentacle
-
-brain = await create_brain(name="API Assistant", tentacles=[tentacle])
-response = await brain.process("Make API call")
-
-# v2 (simple)
+# After (polvo) - it's the same!
 import polvo
+response = polvo.get('https://api.example.com/data',
+                    auth=polvo.auth.bearer('token'))
 
-api = polvo.API("https://api.example.com", auth=polvo.auth.bearer("token"))
-response = api.get("/endpoint")
+# But now you get:
+# - Automatic retries on network errors
+# - Token refresh for OAuth2
+# - Rate limiting protection
+# - Encrypted token storage
 ```
-
-## 🔍 Why Polvo v2?
-
-We built Polvo v2 because existing solutions either:
-
-- Are too simple (basic requests wrapper)
-- Are too complex (enterprise service mesh)
-- Don't handle real production problems (OAuth refresh, rate limiting, multi-tenancy)
-
-Polvo v2 focuses on the patterns that cause **real pain in production**:
-
-1. OAuth2 token refresh across multiple tenants
-2. Smart rate limiting that adapts to API responses
-3. Retry with proper backoff and jitter
-4. Secure token storage and management
-5. Circuit breakers for cascading failure prevention
 
 ## 📚 Documentation
 
-- [Full Documentation](https://docs.usepolvo.com)
-- [API Reference](https://docs.usepolvo.com/api)
-- [Migration Guide](https://docs.usepolvo.com/migration)
+- [Getting Started](https://docs.polvo.dev/quickstart)
+- [Authentication Guide](https://docs.polvo.dev/auth)
+- [API Reference](https://docs.polvo.dev/api)
+- [Examples](https://docs.polvo.dev/examples)
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📄 License
 

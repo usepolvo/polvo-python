@@ -28,8 +28,8 @@ class OAuth2Flow(AuthStrategy):
         client_id: str,
         client_secret: str,
         token_url: str,
-        scope: str = "",
-        storage: Optional[TokenStorage] = None
+        storage: TokenStorage,
+        scope: str = ""
     ):
         """
         Initialize OAuth2 flow.
@@ -38,8 +38,8 @@ class OAuth2Flow(AuthStrategy):
             client_id: OAuth2 client ID
             client_secret: OAuth2 client secret
             token_url: Token endpoint URL
+            storage: Token storage backend (required - be explicit about where tokens are stored)
             scope: OAuth2 scopes (space-separated)
-            storage: Token storage backend
         """
         self.client_id = client_id
         self.client_secret = client_secret

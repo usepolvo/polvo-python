@@ -1,155 +1,271 @@
 """
-Basic usage examples for Polvo v2.
+Polvo v2 - Pythonic Usage Examples
 
-This demonstrates the key features of the new simplified API.
+This demonstrates the new pythonic API design that follows Python conventions
+and provides progressive disclosure from simple to advanced use cases.
 """
 
 import asyncio
 import polvo
 
 
-def basic_example():
-    """Simple API usage example."""
-    print("=== Basic API Usage ===")
+def simple_requests_style():
+    """
+    Simple usage - just like requests library.
     
-    # Simple usage - just like requests
-    api = polvo.API("https://httpbin.org")
+    This is the 95% use case - dead simple for one-off requests.
+    """
+    print("=== Simple Requests-Style Usage ===")
     
-    # GET request
-    response = api.get("/get", params={"key": "value"})
+    # Just like requests - no setup needed
+    response = polvo.get("https://httpbin.org/get")
     print(f"GET status: {response.status_code}")
-    print(f"Response: {response.json()}")
     
-    # POST request
-    response = api.post("/post", json={"name": "John", "age": 30})
-    print(f"POST status: {response.status_code}")
+    # With parameters
+    response = polvo.get("https://httpbin.org/get", params={"key": "value"})
+    print(f"GET with params: {response.status_code}")
     
+    # POST with JSON data  
+    response = polvo.post(
+        "https://httpbin.org/post", 
+        json={"name": "John", "age": 30}
+    )
+    print(f"POST JSON status: {response.status_code}")
+    
+    # With authentication (directly in the call)
+    response = polvo.get(
+        "https://httpbin.org/bearer",
+        auth=polvo.auth.bearer("fake_token_123")
+    )
+    print(f"Authenticated request: {response.status_code}")
 
-def auth_example():
-    """Authentication examples."""
-    print("\n=== Authentication Examples ===")
+
+def simple_auth_patterns():
+    """
+    Common authentication patterns - still simple.
+    """
+    print("\n=== Simple Authentication Patterns ===")
     
-    # Bearer token
-    api = polvo.API("https://httpbin.org", auth=polvo.auth.bearer("fake_token"))
-    response = api.get("/bearer")
-    print(f"Bearer auth status: {response.status_code}")
+    # Bearer token - most common API auth
+    response = polvo.get(
+        "https://httpbin.org/bearer",
+        auth=polvo.auth.bearer("your-bearer-token")
+    )
+    print(f"Bearer auth: {response.status_code}")
     
     # Basic auth
-    api = polvo.API("https://httpbin.org", auth=polvo.auth.basic("user", "pass"))
-    response = api.get("/basic-auth/user/pass")
-    print(f"Basic auth status: {response.status_code}")
+    response = polvo.get(
+        "https://httpbin.org/basic-auth/user/pass",
+        auth=polvo.auth.basic("user", "pass")
+    )
+    print(f"Basic auth: {response.status_code}")
     
-    # API key
-    api = polvo.API("https://httpbin.org", auth=polvo.auth.api_key("secret", "X-API-Key"))
-    response = api.get("/get")
-    print(f"API key auth status: {response.status_code}")
+    # API key in header
+    response = polvo.get(
+        "https://httpbin.org/get",
+        auth=polvo.auth.api_key("secret123", "X-API-Key")
+    )
+    print(f"API key auth: {response.status_code}")
 
 
-def oauth2_example():
-    """OAuth2 with automatic token refresh example."""
-    print("\n=== OAuth2 Example ===")
+def session_for_advanced_usage():
+    """
+    Session for advanced usage - when you need shared configuration.
     
-    # This would work with a real OAuth2 server
-    # Using memory storage for this example
-    storage = polvo.storage.memory()
+    This is the 5% use case - multiple requests to the same API.
+    """
+    print("\n=== Session for Advanced Usage ===")
     
-    oauth = polvo.auth.oauth2(
-        client_id="demo_client",
-        client_secret="demo_secret",
-        token_url="https://example.com/oauth/token",  # Fake URL for demo
-        storage=storage
+    # Session with base URL and shared config
+    with polvo.Session("https://httpbin.org") as session:
+        session.auth = polvo.auth.bearer("shared-token")
+        session.default_headers = {"User-Agent": "MyApp/1.0"}
+        
+        # All requests share the configuration
+        response = session.get("/get")
+        print(f"Session GET: {response.status_code}")
+        
+        response = session.post("/post", json={"session": True})
+        print(f"Session POST: {response.status_code}")
+
+
+def session_convenience_constructors():
+    """
+    Session convenience constructors for common patterns.
+    """
+    print("\n=== Session Convenience Constructors ===")
+    
+    # Quick session with auth
+    session = polvo.Session.with_auth(
+        "https://httpbin.org",
+        polvo.auth.bearer("token123")
+    )
+    response = session.get("/bearer")
+    print(f"Session with auth: {response.status_code}")
+    session.close()
+    
+    # Quick session with retry
+    session = polvo.Session.with_retry(
+        "https://httpbin.org",
+        max_retries=5
+    )
+    response = session.get("/get")
+    print(f"Session with retry: {response.status_code}")
+    session.close()
+    
+    # Quick session for API key
+    session = polvo.Session.for_api(
+        "https://httpbin.org",
+        "my-api-key"
+    )
+    response = session.get("/get")
+    print(f"API session: {response.status_code}")
+    session.close()
+
+
+def oauth2_with_explicit_storage():
+    """
+    OAuth2 with explicit storage configuration.
+    
+    No more magic - you choose exactly where tokens are stored.
+    """
+    print("\n=== OAuth2 with Explicit Storage ===")
+    
+    # Memory storage for testing
+    oauth_memory = polvo.auth.oauth2(
+        client_id="test_client",
+        client_secret="test_secret",
+        token_url="https://httpbin.org/post",  # Fake for demo
+        storage=polvo.storage.memory()
+    )
+    print("OAuth2 with memory storage created")
+    
+    # Encrypted file storage for production - explicit path
+    oauth_file = polvo.auth.oauth2_with_file_storage(
+        client_id="prod_client",
+        client_secret="prod_secret",
+        token_url="https://api.example.com/oauth/token",
+        token_file="~/.myapp/api-tokens.json",
+        encrypt_tokens=True
+    )
+    print("OAuth2 with encrypted file storage created")
+    
+    # You can also be completely explicit
+    oauth_explicit = polvo.auth.oauth2(
+        client_id="explicit_client",
+        client_secret="explicit_secret", 
+        token_url="https://api.example.com/oauth/token",
+        storage=polvo.storage.encrypted_file("~/.myapp/custom-tokens.enc")
+    )
+    print("OAuth2 with explicit storage created")
+
+
+def production_resilience_patterns():
+    """
+    Production resilience patterns - but only when you need them.
+    """
+    print("\n=== Production Resilience Patterns ===")
+    
+    # Simple retry with session
+    session = polvo.Session.with_retry(
+        "https://httpbin.org",
+        max_retries=3
     )
     
-    # In real usage, this would handle token refresh automatically
-    api = polvo.API("https://httpbin.org", auth=oauth)
-    
-    # Multi-tenant usage
-    tenant_a_api = api.for_tenant("tenant_a")
-    tenant_b_api = api.for_tenant("tenant_b")
-    
-    print("OAuth2 setup complete (would work with real OAuth2 server)")
-    print("Multi-tenant APIs created")
-
-
-def resilience_example():
-    """Production resilience patterns example."""
-    print("\n=== Resilience Patterns ===")
-    
-    # Configure retry with exponential backoff
+    # More advanced configuration
     retry_strategy = polvo.retry.exponential_backoff(
-        max_retries=3,
+        max_retries=5,
         base_delay=1.0,
-        max_delay=10.0
+        max_delay=30.0
     )
     
-    # Configure adaptive rate limiting
-    rate_limiter = polvo.rate_limit.adaptive(initial_requests_per_second=2)
+    rate_limiter = polvo.rate_limit.adaptive(
+        initial_requests_per_second=2
+    )
     
-    # Create API with resilience patterns
-    api = polvo.API(
+    session_advanced = polvo.Session(
         "https://httpbin.org",
         retry=retry_strategy,
         rate_limit=rate_limiter,
         timeout=30.0
     )
     
-    # These requests will be automatically rate limited and retried on failure
+    # These requests are automatically rate limited and retried
     for i in range(3):
-        response = api.get("/get", params={"request": i})
-        print(f"Request {i}: {response.status_code}")
+        response = session_advanced.get("/get", params={"request": i})
+        print(f"Resilient request {i}: {response.status_code}")
+    
+    session.close()
+    session_advanced.close()
 
 
-async def async_example():
-    """Async API usage example."""
+async def async_usage():
+    """
+    Async usage - same patterns, just async.
+    """
     print("\n=== Async Usage ===")
     
-    async with polvo.AsyncAPI("https://httpbin.org") as api:
-        # All the same methods, but async
-        response = await api.get("/get")
-        print(f"Async GET status: {response.status_code}")
+    # Simple async requests work the same way
+    async with polvo.AsyncSession("https://httpbin.org") as session:
+        response = await session.get("/get")
+        print(f"Async GET: {response.status_code}")
         
-        response = await api.post("/post", json={"async": True})
-        print(f"Async POST status: {response.status_code}")
+        response = await session.post("/post", json={"async": True})
+        print(f"Async POST: {response.status_code}")
 
 
-def storage_example():
-    """Token storage examples."""
-    print("\n=== Storage Examples ===")
+def show_the_tradeoffs():
+    """
+    Demonstrate the tradeoffs between simple and robust solutions.
+    """
+    print("\n=== Tradeoffs: Simple vs Robust ===")
     
-    # Memory storage (for testing)
-    memory_storage = polvo.storage.memory()
-    print("Memory storage created")
+    print("SIMPLE (95% of use cases):")
+    print("  response = polvo.get('https://api.example.com/data')")
+    print("  ✓ Dead simple")
+    print("  ✓ No configuration")
+    print("  ✗ No connection reuse")
+    print("  ✗ No retry/rate limiting")
     
-    # Encrypted file storage (for production)
-    file_storage = polvo.storage.encrypted_file("./demo_tokens.enc")
-    print("Encrypted file storage created")
+    print("\nROBUST (5% of use cases):")
+    print("  session = polvo.Session.with_retry('https://api.example.com', max_retries=5)")
+    print("  response = session.get('/data')")
+    print("  ✓ Connection reuse") 
+    print("  ✓ Retry and rate limiting")
+    print("  ✓ Shared configuration")
+    print("  ✗ More setup required")
     
-    # Redis storage would require Redis to be running
-    # redis_storage = polvo.storage.redis(host="localhost", port=6379)
-    
-    # Use with OAuth2
-    oauth = polvo.auth.oauth2(
-        client_id="demo",
-        client_secret="secret",
-        token_url="https://example.com/token",
-        storage=memory_storage
-    )
-    print("OAuth2 with custom storage configured")
+    print("\nPRODUCTION (OAuth2 + storage + resilience):")
+    print("  oauth = polvo.auth.oauth2_with_file_storage(...)")
+    print("  session = polvo.Session(base_url, auth=oauth, retry=retry_strategy)")
+    print("  ✓ Automatic token refresh")
+    print("  ✓ Secure token storage")
+    print("  ✓ Production resilience")
+    print("  ✗ Requires understanding of OAuth2")
 
 
 if __name__ == "__main__":
-    print("Polvo v2 - Basic Usage Examples")
-    print("=" * 40)
+    print("Polvo v2 - Pythonic Usage Examples")
+    print("=" * 50)
     
-    # Run sync examples
-    basic_example()
-    auth_example()
-    oauth2_example()
-    resilience_example()
-    storage_example()
+    # Run examples showing progression from simple to advanced
+    simple_requests_style()
+    simple_auth_patterns()
+    session_for_advanced_usage()
+    session_convenience_constructors()
+    oauth2_with_explicit_storage()
+    production_resilience_patterns()
     
-    # Run async example
-    asyncio.run(async_example())
+    # Show async usage
+    asyncio.run(async_usage())
     
-    print("\n=== Examples Complete ===")
-    print("Check the code to see how each feature works!") 
+    # Show the design tradeoffs
+    show_the_tradeoffs()
+    
+    print("\n" + "=" * 50)
+    print("Key Principles Demonstrated:")
+    print("1. Simple things are simple (module-level functions)")
+    print("2. Complex things are possible (Session + explicit config)")
+    print("3. Progressive disclosure (convenience constructors)")
+    print("4. Explicit over implicit (storage, auth, configuration)")
+    print("5. Pythonic patterns (requests-like, context managers)") 

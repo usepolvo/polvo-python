@@ -9,34 +9,47 @@ A requests-like library that handles the hard parts of API integration:
 Usage:
     import polvo
     
-    # Simple usage
-    api = polvo.API("https://api.example.com")
-    response = api.get("/users")
+    # Simple usage (like requests)
+    response = polvo.get("https://api.github.com/users/octocat")
     
     # With authentication
-    api = polvo.API("https://api.example.com", auth=polvo.auth.bearer("token"))
+    response = polvo.post(
+        "https://api.example.com/data",
+        json={"key": "value"},
+        auth=polvo.auth.bearer("token123")
+    )
     
-    # OAuth2 with automatic token refresh
-    oauth = polvo.auth.oauth2(
+    # Session for advanced usage
+    session = polvo.Session("https://api.example.com")
+    session.auth = polvo.auth.oauth2(
         client_id="your_client_id",
-        client_secret="your_secret",
+        client_secret="your_secret", 
         token_url="https://api.example.com/oauth/token"
     )
-    api = polvo.API("https://api.example.com", auth=oauth)
+    response = session.get("/users")
 """
 
 __version__ = "2.0.0"
 
-from .api import API
+# Import Session classes
+from .api import Session, AsyncSession
+
+# Import module-level convenience functions
+from .api import get, post, put, patch, delete, head, options
+
+# Import submodules
 from . import auth
 from . import storage
 from . import retry
 from . import rate_limit
 
 __all__ = [
-    "API",
-    "auth",
-    "storage", 
-    "retry",
-    "rate_limit"
+    # Module-level functions (primary interface)
+    "get", "post", "put", "patch", "delete", "head", "options",
+    
+    # Session classes (advanced usage)
+    "Session", "AsyncSession",
+    
+    # Submodules
+    "auth", "storage", "retry", "rate_limit"
 ] 

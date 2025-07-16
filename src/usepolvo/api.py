@@ -3,7 +3,7 @@ Main API client that provides a requests-like interface.
 """
 
 import httpx
-from typing import Any, Dict, Optional, Union, List
+from typing import Any, Dict, Optional, Union, List, Tuple
 from urllib.parse import urljoin
 
 from .auth.base import AuthStrategy
@@ -11,12 +11,12 @@ from .resilience import RetryStrategy, RateLimiter
 from .storage.base import TokenStorage
 
 
-class API:
+class Session:
     """
-    Main API client with requests-like interface.
+    HTTP session for making requests with shared configuration.
     
-    Handles authentication, retry, rate limiting, and multi-tenant scenarios
-    transparently while providing a familiar requests-style API.
+    Similar to requests.Session, handles authentication, retry, rate limiting, 
+    and multi-tenant scenarios while providing a familiar requests-style API.
     """
     
     def __init__(
@@ -25,7 +25,7 @@ class API:
         auth: Optional[AuthStrategy] = None,
         retry: Optional[RetryStrategy] = None,
         rate_limit: Optional[RateLimiter] = None,
-        circuit_breaker: Optional[CircuitBreaker] = None,
+        # circuit_breaker: Optional[CircuitBreaker] = None,  # TODO: Implement circuit breaker
         timeout: float = 30.0,
         headers: Optional[Dict[str, str]] = None,
         **kwargs
@@ -142,13 +142,73 @@ class API:
     def options(self, url: str, **kwargs) -> httpx.Response:
         """Make an OPTIONS request."""
         return self._make_request('OPTIONS', url, **kwargs)
-
-
-class AsyncAPI:
-    """
-    Async version of the API client.
     
-    Provides the same interface as API but with async/await support.
+    # Class method constructors for common patterns
+    @classmethod
+    def with_auth(cls, base_url: str, auth, **kwargs) -> 'Session':
+        """
+        Create a Session with authentication configured.
+        
+        Args:
+            base_url: Base URL for all requests
+            auth: Authentication strategy
+            **kwargs: Additional Session arguments
+            
+        Example:
+            session = polvo.Session.with_auth(
+                "https://api.example.com",
+                polvo.auth.bearer("token123")
+            )
+        """
+        return cls(base_url, auth=auth, **kwargs)
+
+    @classmethod  
+    def with_retry(cls, base_url: str, max_retries: int = 3, **kwargs) -> 'Session':
+        """
+        Create a Session with simple retry configuration.
+        
+        Args:
+            base_url: Base URL for all requests  
+            max_retries: Maximum number of retries (uses exponential backoff)
+            **kwargs: Additional Session arguments
+            
+        Example:
+            session = polvo.Session.with_retry(
+                "https://api.example.com",
+                max_retries=5
+            )
+        """
+        from . import retry
+        retry_strategy = retry.exponential_backoff(max_retries=max_retries)
+        return cls(base_url, retry=retry_strategy, **kwargs)
+
+    @classmethod
+    def for_api(cls, base_url: str, api_key: str, **kwargs) -> 'Session':
+        """
+        Create a Session configured for API key authentication.
+        
+        Args:
+            base_url: Base URL for all requests
+            api_key: API key value  
+            **kwargs: Additional Session arguments (including 'header_name' for API key header)
+            
+        Example:
+            session = polvo.Session.for_api(
+                "https://api.example.com",
+                "your-api-key-here"
+            )
+        """
+        from . import auth
+        header_name = kwargs.pop('header_name', 'X-API-Key')
+        api_auth = auth.api_key(api_key, header_name)
+        return cls(base_url, auth=api_auth, **kwargs)
+
+
+class AsyncSession:
+    """
+    Async HTTP session for making requests with shared configuration.
+    
+    Provides the same interface as Session but with async/await support.
     """
     
     def __init__(
@@ -263,4 +323,94 @@ class AsyncAPI:
     
     async def options(self, url: str, **kwargs) -> httpx.Response:
         """Make an async OPTIONS request."""
-        return await self._make_request('OPTIONS', url, **kwargs) 
+        return await self._make_request('OPTIONS', url, **kwargs)
+
+
+
+
+
+# Module-level convenience functions (like requests)
+def _create_session_from_kwargs(**kwargs) -> Tuple[Session, Dict[str, Any]]:
+    """Extract session-related kwargs and create a temporary Session."""
+    session_kwargs = {}
+    request_kwargs = {}
+    
+    # Session-level arguments
+    session_args = {'auth', 'retry', 'rate_limit', 'timeout', 'headers'}
+    
+    for key, value in kwargs.items():
+        if key in session_args:
+            session_kwargs[key] = value
+        else:
+            request_kwargs[key] = value
+    
+    session = Session("", **session_kwargs)
+    return session, request_kwargs
+
+
+def get(url: str, params: Optional[Dict[str, Any]] = None, **kwargs) -> httpx.Response:
+    """
+    Make a GET request.
+    
+    Args:
+        url: Complete URL to request
+        params: Query parameters
+        auth: Authentication strategy (Bearer, Basic, etc.)
+        headers: Additional headers
+        timeout: Request timeout
+        **kwargs: Additional arguments passed to the request
+    """
+    session, request_kwargs = _create_session_from_kwargs(**kwargs)
+    with session:
+        return session.get(url, params=params, **request_kwargs)
+
+
+def post(url: str, data: Any = None, json: Any = None, **kwargs) -> httpx.Response:
+    """
+    Make a POST request.
+    
+    Args:
+        url: Complete URL to request
+        data: Form data to send
+        json: JSON data to send
+        auth: Authentication strategy
+        **kwargs: Additional arguments
+    """
+    session, request_kwargs = _create_session_from_kwargs(**kwargs)
+    with session:
+        return session.post(url, data=data, json=json, **request_kwargs)
+
+
+def put(url: str, data: Any = None, json: Any = None, **kwargs) -> httpx.Response:
+    """Make a PUT request."""
+    session, request_kwargs = _create_session_from_kwargs(**kwargs)
+    with session:
+        return session.put(url, data=data, json=json, **request_kwargs)
+
+
+def patch(url: str, data: Any = None, json: Any = None, **kwargs) -> httpx.Response:
+    """Make a PATCH request."""
+    session, request_kwargs = _create_session_from_kwargs(**kwargs)
+    with session:
+        return session.patch(url, data=data, json=json, **request_kwargs)
+
+
+def delete(url: str, **kwargs) -> httpx.Response:
+    """Make a DELETE request."""
+    session, request_kwargs = _create_session_from_kwargs(**kwargs)
+    with session:
+        return session.delete(url, **request_kwargs)
+
+
+def head(url: str, **kwargs) -> httpx.Response:
+    """Make a HEAD request."""
+    session, request_kwargs = _create_session_from_kwargs(**kwargs)
+    with session:
+        return session.head(url, **request_kwargs)
+
+
+def options(url: str, **kwargs) -> httpx.Response:
+    """Make an OPTIONS request."""
+    session, request_kwargs = _create_session_from_kwargs(**kwargs)
+    with session:
+        return session.options(url, **request_kwargs) 
