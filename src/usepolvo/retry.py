@@ -24,7 +24,7 @@ def exponential_backoff(
         
     Example:
         retry_strategy = polvo.retry.exponential_backoff(max_retries=5)
-        api = polvo.API("https://api.example.com", retry=retry_strategy)
+        session = polvo.Session("https://api.example.com", retry=retry_strategy)
     """
     return RetryStrategy(
         max_retries=max_retries,
@@ -74,9 +74,34 @@ def immediate(max_retries: int = 3) -> RetryStrategy:
         jitter=False
     )
 
+def for_apis(max_retries: int = 3) -> RetryStrategy:
+    """
+    Create a retry strategy optimized for API calls.
+    
+    Uses exponential backoff with reasonable defaults for most APIs.
+    
+    Args:
+        max_retries: Maximum number of retry attempts
+        
+    Returns:
+        RetryStrategy instance
+        
+    Example:
+        retry_strategy = polvo.retry.for_apis()
+        session = polvo.Session("https://api.example.com", retry=retry_strategy)
+    """
+    return RetryStrategy(
+        max_retries=max_retries,
+        base_delay=1.0,
+        max_delay=30.0,
+        exponential_base=2.0,
+        jitter=True
+    )
+
 __all__ = [
     "RetryStrategy",
     "exponential_backoff",
     "linear_backoff", 
-    "immediate"
+    "immediate",
+    "for_apis"
 ] 

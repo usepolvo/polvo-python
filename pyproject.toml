@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "usepolvo"
 version = "2.0.0"
-description = "Simple, production-ready API client with OAuth2, retry, rate limiting, and multi-tenant support"
+description = "Simple, production-ready API client with OAuth2, retry, rate limiting, and secure token storage"
 authors = [
     {name = "Polvo Team", email = "team@usepolvo.com"},
 ]
@@ -25,7 +25,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
     "Topic :: System :: Networking",
 ]
-keywords = ["api", "client", "oauth2", "rate-limiting", "retry", "http", "rest"]
+keywords = ["api", "client", "oauth2", "rate-limiting", "retry", "http", "rest", "authentication"]
 requires-python = ">=3.8"
 dependencies = [
     "httpx>=0.24.0",
@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-redis = ["redis>=4.0.0"]
+# Development dependencies
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
@@ -44,6 +44,7 @@ dev = [
     "mypy>=1.0.0",
     "pre-commit>=3.0.0",
 ]
+# Documentation dependencies
 docs = [
     "mkdocs>=1.4.0",
     "mkdocs-material>=8.0.0",

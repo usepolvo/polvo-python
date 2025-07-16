@@ -65,8 +65,6 @@ class Session:
         """Close the underlying HTTP client."""
         self._client.close()
         
-
-    
     def _build_url(self, path: str) -> str:
         """Build full URL from base URL and path."""
         if path.startswith(('http://', 'https://')):
@@ -243,8 +241,6 @@ class AsyncSession:
     async def close(self):
         """Close the underlying HTTP client."""
         await self._client.aclose()
-    
-
     
     def _build_url(self, path: str) -> str:
         """Build full URL from base URL and path."""

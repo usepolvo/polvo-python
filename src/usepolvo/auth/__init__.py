@@ -24,7 +24,7 @@ def bearer(token: str) -> BearerAuth:
     
     Example:
         auth = polvo.auth.bearer("your_token_here")
-        api = polvo.API("https://api.example.com", auth=auth)
+        response = polvo.get("https://api.example.com/data", auth=auth)
     """
     return BearerAuth(token)
 
@@ -63,44 +63,42 @@ def oauth2(
     client_id: str,
     client_secret: str,
     token_url: str,
-    storage,
+    storage=None,
     scope: str = ""
 ) -> OAuth2Flow:
     """
     Create OAuth2 authentication with automatic token refresh.
     
-    This handles complex OAuth2 flows transparently with explicit token storage.
+    This handles complex OAuth2 flows transparently with secure token storage.
     
     Args:
         client_id: OAuth2 client ID
         client_secret: OAuth2 client secret  
         token_url: Token endpoint URL
-        storage: Token storage backend (required - choose where tokens are stored)
+        storage: Token storage backend (optional - defaults to memory with warning)
                  Use polvo.storage.encrypted_file() for production
                  Use polvo.storage.memory() for testing
-                 Use polvo.storage.redis() for distributed systems
         scope: OAuth2 scopes (space-separated)
         
     Returns:
         OAuth2Flow instance
         
     Example:
+        # Simple usage (uses memory storage with warning)
+        oauth = polvo.auth.oauth2(
+            client_id="your_client_id",
+            client_secret="your_secret", 
+            token_url="https://api.example.com/oauth/token"
+        )
+        
         # Production usage with encrypted file storage
         oauth = polvo.auth.oauth2(
             client_id="your_client_id",
             client_secret="your_secret", 
             token_url="https://api.example.com/oauth/token",
-            storage=polvo.storage.encrypted_file("~/.myapp/tokens.json")
+            storage=polvo.storage.encrypted_file("~/.myapp/tokens.enc")
         )
-        
-        # Testing with memory storage
-        oauth = polvo.auth.oauth2(
-            client_id="test_id",
-            client_secret="test_secret",
-            token_url="https://test-api.example.com/token",
-            storage=polvo.storage.memory()
-                 )
-     """        
+    """        
     return OAuth2Flow(
         client_id=client_id,
         client_secret=client_secret,
@@ -114,44 +112,35 @@ def oauth2_with_file_storage(
     client_id: str,
     client_secret: str,
     token_url: str,
-    token_file: str = "~/.config/polvo/tokens.json",
-    encrypt_tokens: bool = True,
+    token_file: str = "~/.polvo/tokens.enc",
     scope: str = ""
 ) -> OAuth2Flow:
     """
-    Create OAuth2 authentication with explicit file storage configuration.
+    Create OAuth2 authentication with explicit encrypted file storage.
     
-    This convenience function makes storage choices explicit and provides
-    sensible defaults for production use.
+    This convenience function provides a secure default for production use.
     
     Args:
         client_id: OAuth2 client ID
         client_secret: OAuth2 client secret
         token_url: Token endpoint URL
-        token_file: Path where tokens should be stored
-        encrypt_tokens: Whether to encrypt tokens on disk (recommended)
+        token_file: Path where encrypted tokens should be stored
         scope: OAuth2 scopes (space-separated)
         
     Returns:
         OAuth2Flow instance
         
     Example:
-        # Production usage with explicit file storage
         oauth = polvo.auth.oauth2_with_file_storage(
             client_id="your_client_id",
             client_secret="your_secret",
             token_url="https://api.example.com/oauth/token",
-            token_file="~/.myapp/api-tokens.json",
-            encrypt_tokens=True
+            token_file="~/.myapp/api-tokens.enc"
         )
     """
     from .. import storage
     
-    if encrypt_tokens:
-        token_storage = storage.encrypted_file(token_file)
-    else:
-        # For now, use encrypted file anyway but we could add plain file storage
-        token_storage = storage.encrypted_file(token_file)
+    token_storage = storage.encrypted_file(token_file)
     
     return OAuth2Flow(
         client_id=client_id,
@@ -161,21 +150,13 @@ def oauth2_with_file_storage(
         scope=scope
     )
 
-# Simple auth patterns for common cases
-class BearerToken(BearerAuth):
-    """
-    Bearer token authentication (more explicit name).
-    
-    Use this for APIs that require 'Authorization: Bearer <token>' headers.
-    """
-    pass
-
-
+# Pythonic aliases for convenience
 class OAuth2(OAuth2Flow):
     """
     OAuth2 authentication (shorter, more Pythonic name).
     
     Use this for APIs that use OAuth2 client credentials flow.
+    Same as OAuth2Flow but with a shorter name.
     """
     pass
 
@@ -189,7 +170,6 @@ __all__ = [
     "OAuth2Flow",
     
     # Pythonic aliases
-    "BearerToken",
     "OAuth2",
     
     # Convenience functions

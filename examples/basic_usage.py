@@ -123,41 +123,55 @@ def session_convenience_constructors():
     session.close()
 
 
-def oauth2_with_explicit_storage():
+def oauth2_simple_and_explicit():
     """
-    OAuth2 with explicit storage configuration.
+    OAuth2 - simple by default, explicit when needed.
     
-    No more magic - you choose exactly where tokens are stored.
+    Shows the progression from simple (with warning) to production-ready.
     """
-    print("\n=== OAuth2 with Explicit Storage ===")
+    print("\n=== OAuth2: Simple by Default, Explicit When Needed ===")
     
-    # Memory storage for testing
+    # Simple OAuth2 - uses memory storage with warning
+    print("1. Simple OAuth2 (development):")
+    try:
+        oauth_simple = polvo.auth.oauth2(
+            client_id="test_client",
+            client_secret="test_secret",
+            token_url="https://httpbin.org/post"  # Fake for demo
+        )
+        print("   ✓ Created with memory storage (warning shown)")
+    except Exception as e:
+        print(f"   Mock creation: {type(e).__name__}")
+    
+    # Explicit memory storage (no warning)
+    print("2. Explicit memory storage (testing):")
     oauth_memory = polvo.auth.oauth2(
         client_id="test_client",
         client_secret="test_secret",
-        token_url="https://httpbin.org/post",  # Fake for demo
+        token_url="https://httpbin.org/post",
         storage=polvo.storage.memory()
     )
-    print("OAuth2 with memory storage created")
+    print("   ✓ Created with explicit memory storage (no warning)")
     
-    # Encrypted file storage for production - explicit path
-    oauth_file = polvo.auth.oauth2_with_file_storage(
+    # Production with encrypted file storage
+    print("3. Production with encrypted file storage:")
+    oauth_production = polvo.auth.oauth2(
         client_id="prod_client",
         client_secret="prod_secret",
         token_url="https://api.example.com/oauth/token",
-        token_file="~/.myapp/api-tokens.json",
-        encrypt_tokens=True
+        storage=polvo.storage.encrypted_file("~/.myapp/tokens.enc")
     )
-    print("OAuth2 with encrypted file storage created")
+    print("   ✓ Created with encrypted file storage")
     
-    # You can also be completely explicit
-    oauth_explicit = polvo.auth.oauth2(
-        client_id="explicit_client",
-        client_secret="explicit_secret", 
+    # Convenience function for production
+    print("4. Convenience function for production:")
+    oauth_convenient = polvo.auth.oauth2_with_file_storage(
+        client_id="prod_client",
+        client_secret="prod_secret",
         token_url="https://api.example.com/oauth/token",
-        storage=polvo.storage.encrypted_file("~/.myapp/custom-tokens.enc")
+        token_file="~/.myapp/api-tokens.enc"
     )
-    print("OAuth2 with explicit storage created")
+    print("   ✓ Created with convenient encrypted file storage")
 
 
 def production_resilience_patterns():
@@ -235,17 +249,41 @@ def show_the_tradeoffs():
     print("  ✓ Shared configuration")
     print("  ✗ More setup required")
     
-    print("\nPRODUCTION (OAuth2 + storage + resilience):")
-    print("  oauth = polvo.auth.oauth2_with_file_storage(...)")
-    print("  session = polvo.Session(base_url, auth=oauth, retry=retry_strategy)")
-    print("  ✓ Automatic token refresh")
-    print("  ✓ Secure token storage")
-    print("  ✓ Production resilience")
-    print("  ✗ Requires understanding of OAuth2")
+    print("\nPRODUCTION OAuth2 (Progressive disclosure):")
+    print("  Simple:   oauth = polvo.auth.oauth2(client_id, secret, token_url)")
+    print("            # Uses memory storage with warning")
+    print("  Testing:  oauth = polvo.auth.oauth2(..., storage=polvo.storage.memory())")
+    print("            # Explicit memory, no warning")  
+    print("  Production: oauth = polvo.auth.oauth2(..., storage=polvo.storage.encrypted_file())")
+    print("            # Secure file storage")
+    print("  ✓ Simple by default, secure when explicit")
+    print("  ✓ Clear upgrade path from dev to production")
+
+
+def show_what_was_simplified():
+    """
+    Show what was removed/simplified in v2.
+    """
+    print("\n=== What Was Simplified ===")
+    
+    print("REMOVED:")
+    print("  ✗ Redis storage (half-baked, added complexity)")
+    print("  ✗ Multiple storage backends (focus on quality over quantity)")
+    print("  ✗ Required storage parameter (now optional with defaults)")
+    
+    print("\nADDED:")
+    print("  ✓ Default storage with helpful warnings")
+    print("  ✓ Cleaner convenience functions")
+    print("  ✓ Better progressive disclosure")
+    
+    print("\nIMPROVED:")
+    print("  ✓ OAuth2 is more user-friendly while staying explicit")
+    print("  ✓ Storage module is focused and well-implemented")
+    print("  ✓ Cleaner dependency management")
 
 
 if __name__ == "__main__":
-    print("Polvo v2 - Pythonic Usage Examples")
+    print("Polvo v2 - Simplified and Well-Crafted")
     print("=" * 50)
     
     # Run examples showing progression from simple to advanced
@@ -253,7 +291,7 @@ if __name__ == "__main__":
     simple_auth_patterns()
     session_for_advanced_usage()
     session_convenience_constructors()
-    oauth2_with_explicit_storage()
+    oauth2_simple_and_explicit()
     production_resilience_patterns()
     
     # Show async usage
@@ -262,10 +300,14 @@ if __name__ == "__main__":
     # Show the design tradeoffs
     show_the_tradeoffs()
     
+    # Show what we simplified
+    show_what_was_simplified()
+    
     print("\n" + "=" * 50)
     print("Key Principles Demonstrated:")
     print("1. Simple things are simple (module-level functions)")
     print("2. Complex things are possible (Session + explicit config)")
-    print("3. Progressive disclosure (convenience constructors)")
-    print("4. Explicit over implicit (storage, auth, configuration)")
-    print("5. Pythonic patterns (requests-like, context managers)") 
+    print("3. Progressive disclosure (warnings → explicit → production)")
+    print("4. Focused scope (removed half-baked features)")
+    print("5. Pythonic patterns (requests-like, context managers)")
+    print("6. Production-ready when needed (encryption, security)") 

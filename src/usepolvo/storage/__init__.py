@@ -2,12 +2,13 @@
 Token storage backends for Polvo v2.
 
 Provides secure, production-ready token storage with encryption support.
+Focus on simplicity and security - memory for development/testing,
+encrypted file for production.
 """
 
 from .base import TokenStorage
 from .encrypted_file import EncryptedFileStorage
 from .memory import MemoryStorage
-from .redis import RedisStorage
 
 # Convenience functions for common storage patterns
 def encrypted_file(file_path: str = "~/.polvo/tokens.enc", password: str = None) -> EncryptedFileStorage:
@@ -31,9 +32,10 @@ def encrypted_file(file_path: str = "~/.polvo/tokens.enc", password: str = None)
 
 def memory() -> MemoryStorage:
     """
-    Create in-memory storage (useful for testing).
+    Create in-memory storage (useful for testing and development).
     
     Tokens are stored in memory and lost when the process exits.
+    NOT recommended for production use.
     
     Returns:
         MemoryStorage instance
@@ -44,33 +46,10 @@ def memory() -> MemoryStorage:
     """
     return MemoryStorage()
 
-def redis(host: str = "localhost", port: int = 6379, db: int = 0, **kwargs) -> RedisStorage:
-    """
-    Create Redis storage (recommended for production with multiple instances).
-    
-    Stores tokens in Redis for sharing across multiple application instances.
-    
-    Args:
-        host: Redis host (default: localhost)
-        port: Redis port (default: 6379)
-        db: Redis database number (default: 0)
-        **kwargs: Additional arguments passed to Redis client
-        
-    Returns:
-        RedisStorage instance
-        
-    Example:
-        storage = polvo.storage.redis(host="redis.example.com", port=6379)
-        oauth = polvo.auth.oauth2(..., storage=storage)
-    """
-    return RedisStorage(host, port, db, **kwargs)
-
 __all__ = [
     "TokenStorage",
     "EncryptedFileStorage", 
     "MemoryStorage",
-    "RedisStorage",
     "encrypted_file",
-    "memory",
-    "redis"
+    "memory"
 ] 

@@ -7,9 +7,11 @@ This is the crown jewel of the auth module - handles complex OAuth2 flows transp
 import time
 import httpx
 import threading
+import warnings
 from typing import Dict, Optional
 from .base import AuthStrategy
 from ..storage.base import TokenStorage
+from ..storage.memory import MemoryStorage
 
 
 class OAuth2Flow(AuthStrategy):
@@ -28,7 +30,7 @@ class OAuth2Flow(AuthStrategy):
         client_id: str,
         client_secret: str,
         token_url: str,
-        storage: TokenStorage,
+        storage: Optional[TokenStorage] = None,
         scope: str = ""
     ):
         """
@@ -38,13 +40,25 @@ class OAuth2Flow(AuthStrategy):
             client_id: OAuth2 client ID
             client_secret: OAuth2 client secret
             token_url: Token endpoint URL
-            storage: Token storage backend (required - be explicit about where tokens are stored)
+            storage: Token storage backend (if None, uses memory with warning)
             scope: OAuth2 scopes (space-separated)
         """
         self.client_id = client_id
         self.client_secret = client_secret
         self.token_url = token_url
         self.scope = scope
+        
+        # Use default storage with warning if not provided
+        if storage is None:
+            warnings.warn(
+                "Using insecure memory storage for OAuth2 tokens. "
+                "For production, specify storage=polvo.storage.encrypted_file(). "
+                "For testing, use storage=polvo.storage.memory() to silence this warning.",
+                UserWarning,
+                stacklevel=2
+            )
+            storage = MemoryStorage()
+        
         self.storage = storage
         
         # Thread safety for token refresh
@@ -65,7 +79,19 @@ class OAuth2Flow(AuthStrategy):
         token = self._get_valid_token()
         return {"Authorization": f"Bearer {token}"}
     
-
+    async def get_headers_async(self) -> Dict[str, str]:
+        """
+        Get OAuth2 authentication headers with automatic token refresh (async version).
+        
+        Note: Currently uses sync token refresh since OAuth2 token requests are typically
+        infrequent and don't benefit significantly from async.
+        
+        Returns:
+            Dictionary with Authorization header
+        """
+        # For now, delegate to sync version since token refresh is rare
+        # and doesn't benefit much from async
+        return self.get_headers()
     
     def _get_valid_token(self) -> str:
         """

@@ -27,6 +27,11 @@ Usage:
         token_url="https://api.example.com/oauth/token"
     )
     response = session.get("/users")
+
+Async Support:
+    - Full async support with AsyncSession
+    - OAuth2 token refresh uses sync internally (infrequent operations)
+    - Rate limiting and retry work with both sync and async
 """
 
 __version__ = "2.0.0"
